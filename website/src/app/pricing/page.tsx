@@ -44,8 +44,12 @@ export default async function PricingPage() {
   const highlightIndex = list.length >= 2 ? 1 : 0;
 
   return (
-    <div>
-      <section className="border-b bg-muted/30 py-16 sm:py-20">
+    <div className="relative overflow-hidden">
+      {/* Decorative background glow */}
+      <div className="absolute top-[10%] left-[-10%] -z-10 h-[500px] w-[500px] rounded-full bg-primary/5 blur-[120px]" />
+      <div className="absolute top-[60%] right-[-10%] -z-10 h-[400px] w-[400px] rounded-full bg-primary/5 blur-[100px]" />
+
+      <section className="border-b border-border/40 bg-card/25 py-16 sm:py-20">
         <div className="container">
           <SectionHeading
             eyebrow="Membership Plans"
@@ -55,10 +59,10 @@ export default async function PricingPage() {
         </div>
       </section>
 
-      <section className="py-16 sm:py-20">
+      <section className="py-16 sm:py-24">
         <div className="container">
           {list.length > 0 ? (
-            <div className="grid gap-6 md:grid-cols-3">
+            <div className="grid gap-8 md:grid-cols-3 items-center">
               {list.map((plan, i) => (
                 <PricingCard key={plan.id} plan={plan} highlighted={i === highlightIndex} />
               ))}
@@ -75,34 +79,37 @@ export default async function PricingPage() {
         </div>
       </section>
 
-      <section className="border-t py-16 sm:py-20">
-        <div className="container grid gap-10 lg:grid-cols-[1fr_1.4fr]">
+      <section className="border-t border-border/40 bg-card/10 py-16 sm:py-24">
+        <div className="container grid gap-12 lg:grid-cols-[1fr_1.4fr] items-start">
           <SectionHeading
             center={false}
             eyebrow="FAQ"
             title="Common questions"
             description="Still unsure? Reach out and we'll help you pick the right plan."
           />
-          <Accordion type="single" collapsible className="w-full">
+          <Accordion type="single" collapsible className="w-full bg-card/40 backdrop-blur rounded-2xl border border-border/60 p-6 md:p-8">
             {FAQS.map((faq) => (
-              <AccordionItem key={faq.q} value={faq.q}>
-                <AccordionTrigger className="text-left">{faq.q}</AccordionTrigger>
-                <AccordionContent className="text-muted-foreground">{faq.a}</AccordionContent>
+              <AccordionItem key={faq.q} value={faq.q} className="border-border/60">
+                <AccordionTrigger className="text-left font-semibold text-base hover:text-primary transition-colors py-4">{faq.q}</AccordionTrigger>
+                <AccordionContent className="text-muted-foreground leading-relaxed text-sm pb-4">{faq.a}</AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
         </div>
       </section>
 
-      <section className="border-t py-16 sm:py-20">
-        <div className="container flex flex-col items-center gap-4 text-center">
-          <h2 className="text-2xl font-bold sm:text-3xl">Not sure which plan fits?</h2>
-          <p className="max-w-md text-muted-foreground">
-            Register your interest and our team will help you choose the right plan.
+      <section className="border-t border-border/40 py-16 sm:py-24">
+        <div className="container flex flex-col items-center gap-6 text-center">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary">
+            Get Consulted
+          </span>
+          <h2 className="text-3xl font-extrabold sm:text-4xl">Not sure which plan fits?</h2>
+          <p className="max-w-md text-muted-foreground text-sm sm:text-base leading-relaxed">
+            Register your interest and our expert coaching staff will reach out to help you choose the right path.
           </p>
-          <Button size="lg" asChild>
+          <Button size="lg" className="px-8 font-bold uppercase tracking-wider text-xs py-6 shadow-lg shadow-primary/20 mt-2" asChild>
             <Link href="/register">
-              Get Started <ArrowRight className="size-4" />
+              Get Started <ArrowRight className="size-4 ml-2" />
             </Link>
           </Button>
         </div>

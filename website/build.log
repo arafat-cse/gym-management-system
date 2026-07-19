@@ -1,0 +1,24 @@
+
+> website@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.35
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+Failed to compile.
+
+./src/app/register/page.tsx:211:38
+Type error: Type '{ children: Element; className: string; }' is not assignable to type 'IntrinsicAttributes & { children?: ReactNode; }'.
+  Property 'className' does not exist on type 'IntrinsicAttributes & { children?: ReactNode; }'.
+
+[0m [90m 209 |[39m                       }[0m
+[0m [90m 210 |[39m                     [33m>[39m[0m
+[0m[31m[1m>[22m[39m[90m 211 |[39m                       [33m<[39m[33mSelectTrigger[39m className[33m=[39m[32m"bg-background/50 border-border/60 focus:border-primary/50"[39m[33m>[39m[0m
+[0m [90m     |[39m                                      [31m[1m^[22m[39m[0m
+[0m [90m 212 |[39m                         [33m<[39m[33mSelectValue[39m placeholder[33m=[39m[32m"Select"[39m [33m/[39m[33m>[39m[0m
+[0m [90m 213 |[39m                       [33m<[39m[33m/[39m[33mSelectTrigger[39m[33m>[39m[0m
+[0m [90m 214 |[39m                       [33m<[39m[33mSelectContent[39m[33m>[39m[0m
+Next.js build worker exited with code: 1 and signal: null

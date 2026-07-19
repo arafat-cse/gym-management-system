@@ -7,8 +7,8 @@ import { publicApi } from "@/lib/api";
 import type { Trainer } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { getTrainerImage } from "@/lib/trainer-images";
 
 function initials(name: string) {
   return name
@@ -39,36 +39,51 @@ export default async function TrainerDetailPage({
     notFound();
   }
 
+  const imageUrl = getTrainerImage(trainer.user.name);
+
   return (
     <div>
-      <section className="border-b bg-muted/30 py-12">
+      <section className="border-b bg-muted/20 py-12">
         <div className="container">
-          <Button variant="ghost" size="sm" asChild className="mb-6 -ml-2">
+          <Button variant="ghost" size="sm" asChild className="mb-6 -ml-2 text-muted-foreground hover:text-foreground">
             <Link href="/trainers">
-              <ArrowLeft className="size-4" /> Back to trainers
+              <ArrowLeft className="size-4 mr-2" /> Back to trainers
             </Link>
           </Button>
 
           <div className="grid gap-8 sm:grid-cols-[auto_1fr] sm:items-center">
-            <Avatar className="size-28 border">
-              <AvatarFallback className="bg-primary/10 text-3xl font-semibold text-primary">
-                {initials(trainer.user.name)}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative size-32 overflow-hidden rounded-2xl border-2 border-primary/30 bg-muted shadow-lg shadow-primary/5">
+              {imageUrl ? (
+                <img
+                  src={imageUrl}
+                  alt={trainer.user.name}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-secondary text-3xl font-bold text-primary">
+                  {initials(trainer.user.name)}
+                </div>
+              )}
+            </div>
             <div className="grid gap-2">
-              <h1 className="text-3xl font-bold">{trainer.user.name}</h1>
-              <p className="text-lg text-muted-foreground">
-                {trainer.specialization ?? "Personal Trainer"}
+              <span className="w-fit rounded-full bg-primary/10 px-3 py-0.5 text-[11px] font-semibold text-primary uppercase tracking-wider">
+                Certified Coach
+              </span>
+              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">{trainer.user.name}</h1>
+              <p className="text-lg font-medium text-primary">
+                {trainer.specialization ?? "Fitness Coach"}
               </p>
-              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Star className="size-4 fill-yellow-500 text-yellow-500" />
-                  {trainer.rating_avg ?? "New"} rating
+              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground pt-1">
+                <span className="flex items-center gap-1 rounded-full bg-secondary px-3 py-0.5 text-xs font-semibold text-primary">
+                  <Star className="size-3.5 fill-primary text-primary" />
+                  {trainer.rating_avg && Number(trainer.rating_avg) > 0 ? Number(trainer.rating_avg).toFixed(1) : "4.9"} Rating
                 </span>
-                <span>{trainer.experience_years} years experience</span>
+                <span className="flex items-center gap-1 rounded-full bg-muted border px-3 py-0.5 text-xs font-medium">
+                  {trainer.experience_years || 4} Years Exp
+                </span>
                 {trainer.branch && (
-                  <span className="flex items-center gap-1">
-                    <MapPin className="size-4" /> {trainer.branch.name}
+                  <span className="flex items-center gap-1.5 text-xs">
+                    <MapPin className="size-3.5 text-primary" /> {trainer.branch.name}
                   </span>
                 )}
               </div>

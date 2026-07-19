@@ -32,11 +32,14 @@ const CONTACT_ITEMS = [
     lines: ["Sat – Thu: 6:00 AM – 10:00 PM", "Friday: 3:00 PM – 9:00 PM"],
   },
 ];
-
 export default function ContactPage() {
   return (
-    <div>
-      <section className="border-b bg-muted/30 py-16 sm:py-20">
+    <div className="relative overflow-hidden">
+      {/* Decorative background glow */}
+      <div className="absolute top-[20%] right-[-10%] -z-10 h-[500px] w-[500px] rounded-full bg-primary/5 blur-[120px]" />
+      <div className="absolute bottom-[10%] left-[-10%] -z-10 h-[400px] w-[400px] rounded-full bg-primary/5 blur-[100px]" />
+
+      <section className="border-b border-border/40 bg-card/25 py-16 sm:py-20">
         <div className="container">
           <SectionHeading
             eyebrow="Contact"
@@ -46,19 +49,19 @@ export default function ContactPage() {
         </div>
       </section>
 
-      <section className="py-16 sm:py-20">
-        <div className="container grid gap-10 lg:grid-cols-[1fr_1.2fr]">
+      <section className="py-16 sm:py-24">
+        <div className="container grid gap-10 lg:grid-cols-[1fr_1.2fr] items-start">
           <div className="grid gap-4">
             {CONTACT_ITEMS.map((item) => (
-              <Card key={item.title}>
+              <Card key={item.title} className="bg-card/40 border-border/60 hover:border-primary/30 transition-all duration-300">
                 <CardContent className="flex items-start gap-4 pt-6">
-                  <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <item.icon className="size-5" />
+                  <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-inner">
+                    <item.icon className="size-5.5" />
                   </div>
                   <div>
-                    <h3 className="font-semibold">{item.title}</h3>
+                    <h3 className="font-bold text-base text-foreground mb-1">{item.title}</h3>
                     {item.lines.map((line) => (
-                      <p key={line} className="text-sm text-muted-foreground">
+                      <p key={line} className="text-sm text-muted-foreground leading-relaxed">
                         {line}
                       </p>
                     ))}
@@ -68,8 +71,10 @@ export default function ContactPage() {
             ))}
           </div>
 
-          <Card>
-            <CardContent className="pt-6">
+          <Card className="bg-card/40 border-border/60 shadow-xl p-6 md:p-8 backdrop-blur">
+            <CardContent className="p-0">
+              <h3 className="text-xl font-bold mb-1 text-foreground">Send a Message</h3>
+              <p className="text-xs text-muted-foreground mb-6">Fill out the form below and we will get back to you shortly.</p>
               <ContactForm />
             </CardContent>
           </Card>

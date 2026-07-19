@@ -85,74 +85,81 @@ export default async function HomePage() {
   const previewTrainers = (trainers ?? []).slice(0, 4);
 
   return (
-    <div>
+    <div className="relative overflow-hidden">
+      {/* Decorative background glow */}
+      <div className="absolute top-[10%] left-[-10%] -z-10 h-[600px] w-[600px] rounded-full bg-primary/5 blur-[130px]" />
+      <div className="absolute top-[40%] right-[-10%] -z-10 h-[500px] w-[500px] rounded-full bg-primary/5 blur-[120px]" />
+
       {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="container grid items-center gap-10 py-16 sm:py-24 lg:grid-cols-2 lg:py-28">
-          <div className="grid gap-6">
-            <span className="inline-flex w-fit items-center gap-1.5 rounded-full border bg-muted px-3 py-1 text-sm font-medium text-muted-foreground">
-              <Sparkles className="size-3.5 text-primary" />
+      <section className="relative pt-12 pb-20 md:pt-20 md:pb-28">
+        <div className="container grid items-center gap-12 lg:grid-cols-12">
+          <div className="lg:col-span-7 grid gap-6 text-left">
+            <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
+              <Sparkles className="size-3 text-primary animate-pulse" />
               Now enrolling for {new Date().toLocaleString("en-US", { month: "long" })}
             </span>
-            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-              Train smarter.
+            <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl xl:text-7xl leading-[1.1] text-balance">
+              Train <span className="text-primary text-glow font-black">smarter.</span>
               <br />
-              Live <span className="text-primary">stronger.</span>
+              Live <span className="text-primary text-glow font-black">stronger.</span>
             </h1>
-            <p className="max-w-lg text-lg text-muted-foreground">
-              PulseFit brings expert trainers, flexible plans, and a real
-              community together — so showing up becomes the easy part.
+            <p className="max-w-xl text-base sm:text-lg text-muted-foreground leading-relaxed">
+              PulseFit combines elite personal coaching, state-of-the-art training spaces, and a results-driven community to help you achieve your ultimate fitness goals.
             </p>
-            <div className="flex flex-wrap gap-3">
-              <Button size="lg" asChild>
+            <div className="flex flex-wrap gap-4 pt-2">
+              <Button size="lg" className="px-8 font-bold uppercase tracking-wider text-xs py-6 shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all duration-300" asChild>
                 <Link href="/register">
-                  Join Now <ArrowRight className="size-4" />
+                  Get Started Now <ArrowRight className="size-4 ml-2" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" asChild>
-                <Link href="/pricing">View Plans</Link>
+              <Button size="lg" variant="secondary" className="px-8 font-bold uppercase tracking-wider text-xs py-6 border border-border/80" asChild>
+                <Link href="/pricing">Explore Plans</Link>
               </Button>
             </div>
-            <div className="flex items-center gap-6 pt-2">
+            
+            <div className="flex flex-wrap items-center gap-8 pt-6 border-t border-border/40 mt-4">
               <div>
-                <p className="text-2xl font-bold">{trainers?.length ?? "5"}+</p>
-                <p className="text-sm text-muted-foreground">Expert trainers</p>
+                <p className="text-3xl font-black text-glow">{trainers?.length ?? "5"}+</p>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mt-0.5">Elite Coaches</p>
               </div>
-              <div className="h-8 w-px bg-border" />
+              <div className="hidden sm:block h-10 w-px bg-border/40" />
               <div>
-                <p className="text-2xl font-bold">{plans?.length ?? "3"}</p>
-                <p className="text-sm text-muted-foreground">Flexible plans</p>
+                <p className="text-3xl font-black text-glow">{plans?.length ?? "3"}</p>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mt-0.5">Flexible Tiers</p>
               </div>
-              <div className="h-8 w-px bg-border" />
+              <div className="hidden sm:block h-10 w-px bg-border/40" />
               <div>
-                <p className="flex items-center gap-1 text-2xl font-bold">
-                  4.9 <Star className="size-5 fill-yellow-500 text-yellow-500" />
+                <p className="flex items-center gap-1.5 text-3xl font-black text-glow">
+                  4.9 <Star className="size-5 fill-primary text-primary" />
                 </p>
-                <p className="text-sm text-muted-foreground">Member rating</p>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mt-0.5">Member Rating</p>
               </div>
             </div>
           </div>
 
-          <div className="relative">
-            <div className="absolute -inset-4 -z-10 rounded-[2rem] bg-primary/10 blur-2xl" />
-            <div className="overflow-hidden rounded-2xl border shadow-xl">
+          <div className="lg:col-span-5 relative">
+            <div className="absolute -inset-1 rounded-[2.5rem] bg-gradient-to-tr from-primary to-primary/40 opacity-20 blur-2xl -z-10" />
+            <div className="relative overflow-hidden rounded-3xl border border-border/60 shadow-2xl bg-card">
               <Image
-                src="https://picsum.photos/seed/pulsefit-hero/900/1000"
-                alt="Member training at PulseFit Gym"
+                src="https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&q=80&w=900&h=1100"
+                alt="Male athlete training at PulseFit Gym"
                 width={900}
-                height={1000}
+                height={1100}
                 priority
-                className="aspect-[9/10] w-full object-cover"
+                className="aspect-[4/5] w-full object-cover transition-transform duration-500 hover:scale-102"
               />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-transparent to-transparent" />
             </div>
-            <Card className="absolute -bottom-6 -left-6 hidden w-56 shadow-lg sm:block">
-              <CardContent className="flex items-center gap-3 p-4">
-                <div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <CalendarCheck className="size-5" />
+            
+            {/* Floating Badge */}
+            <Card className="absolute -bottom-6 -left-6 hidden w-64 shadow-2xl border-primary/20 bg-background/90 backdrop-blur sm:block z-10">
+              <CardContent className="flex items-center gap-3.5 p-4">
+                <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+                  <CalendarCheck className="size-5.5" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold">Session Booked</p>
-                  <p className="text-xs text-muted-foreground">Today, 6:00 PM</p>
+                  <p className="text-xs font-medium text-muted-foreground">Pulse Session</p>
+                  <p className="text-sm font-bold text-foreground">Next class: Today, 6:00 PM</p>
                 </div>
               </CardContent>
             </Card>
@@ -161,7 +168,7 @@ export default async function HomePage() {
       </section>
 
       {/* Features */}
-      <section className="border-t bg-muted/30 py-20">
+      <section className="border-y border-border/40 bg-card/20 py-20 relative">
         <div className="container grid gap-12">
           <SectionHeading
             eyebrow="Why PulseFit"
@@ -170,13 +177,13 @@ export default async function HomePage() {
           />
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map((feature) => (
-              <Card key={feature.title}>
+              <Card key={feature.title} className="glass-card glow-hover border-border/40">
                 <CardContent className="grid gap-3 pt-6">
-                  <div className="flex size-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <feature.icon className="size-5" />
+                  <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-inner">
+                    <feature.icon className="size-5.5" />
                   </div>
-                  <h3 className="font-semibold">{feature.title}</h3>
-                  <p className="text-sm text-muted-foreground">{feature.description}</p>
+                  <h3 className="font-bold text-lg text-foreground">{feature.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
                 </CardContent>
               </Card>
             ))}
@@ -185,7 +192,7 @@ export default async function HomePage() {
       </section>
 
       {/* Pricing preview */}
-      <section className="py-20">
+      <section className="py-20 relative">
         <div className="container grid gap-12">
           <SectionHeading
             eyebrow="Membership"
@@ -193,7 +200,7 @@ export default async function HomePage() {
             description="Pick a plan that matches your goals. Switch or cancel anytime."
           />
           {previewPlans.length > 0 ? (
-            <div className="grid gap-6 md:grid-cols-3">
+            <div className="grid gap-6 md:grid-cols-3 items-center">
               {previewPlans.map((plan, i) => (
                 <PricingCard key={plan.id} plan={plan} highlighted={i === 1} />
               ))}
@@ -203,10 +210,10 @@ export default async function HomePage() {
               Plans are being updated — check back shortly.
             </p>
           )}
-          <div className="flex justify-center">
-            <Button variant="outline" asChild>
+          <div className="flex justify-center mt-4">
+            <Button variant="outline" className="border-border hover:bg-secondary font-bold uppercase tracking-wider text-xs px-6 py-5" asChild>
               <Link href="/pricing">
-                See all plans <ArrowRight className="size-4" />
+                See all plans <ArrowRight className="size-4 ml-2" />
               </Link>
             </Button>
           </div>
@@ -214,7 +221,7 @@ export default async function HomePage() {
       </section>
 
       {/* Trainers preview */}
-      <section className="border-t bg-muted/30 py-20">
+      <section className="border-t border-border/40 bg-card/20 py-20 relative">
         <div className="container grid gap-12">
           <SectionHeading
             eyebrow="Our Team"
@@ -232,10 +239,10 @@ export default async function HomePage() {
               Trainer profiles are being updated — check back shortly.
             </p>
           )}
-          <div className="flex justify-center">
-            <Button variant="outline" asChild>
+          <div className="flex justify-center mt-4">
+            <Button variant="outline" className="border-border hover:bg-secondary font-bold uppercase tracking-wider text-xs px-6 py-5" asChild>
               <Link href="/trainers">
-                Meet all trainers <ArrowRight className="size-4" />
+                Meet all trainers <ArrowRight className="size-4 ml-2" />
               </Link>
             </Button>
           </div>
@@ -243,7 +250,7 @@ export default async function HomePage() {
       </section>
 
       {/* Testimonials */}
-      <section className="py-20">
+      <section className="py-20 relative">
         <div className="container grid gap-12">
           <SectionHeading
             eyebrow="Member Stories"
@@ -251,22 +258,22 @@ export default async function HomePage() {
           />
           <div className="grid gap-6 md:grid-cols-3">
             {TESTIMONIALS.map((t) => (
-              <Card key={t.name}>
+              <Card key={t.name} className="bg-card/40 backdrop-blur border-border/60 hover:border-primary/30 transition-all duration-300">
                 <CardContent className="grid gap-4 pt-6">
-                  <div className="flex gap-0.5 text-yellow-500">
+                  <div className="flex gap-0.5 text-primary">
                     {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} className="size-4 fill-current" />
+                      <Star key={i} className="size-4 fill-primary text-primary" />
                     ))}
                   </div>
-                  <p className="text-sm text-muted-foreground">&ldquo;{t.quote}&rdquo;</p>
-                  <div className="flex items-center gap-3">
-                    <Avatar className="size-9">
-                      <AvatarFallback className="text-xs">
+                  <p className="text-sm text-muted-foreground leading-relaxed italic">&ldquo;{t.quote}&rdquo;</p>
+                  <div className="flex items-center gap-3 pt-2">
+                    <Avatar className="size-10 border border-primary/20">
+                      <AvatarFallback className="text-xs bg-primary/10 text-primary font-bold">
                         {t.name.split(" ").map((p) => p[0]).join("")}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="text-sm font-semibold">{t.name}</p>
+                      <p className="text-sm font-bold text-foreground">{t.name}</p>
                       <p className="text-xs text-muted-foreground">{t.role}</p>
                     </div>
                   </div>
@@ -278,34 +285,41 @@ export default async function HomePage() {
       </section>
 
       {/* CTA */}
-      <section className="border-t py-20">
+      <section className="py-20 relative">
         <div className="container">
-          <Card className="overflow-hidden border-none bg-primary text-primary-foreground">
-            <CardContent className="grid items-center gap-6 p-10 text-center sm:p-14">
-              <h2 className="text-3xl font-bold sm:text-4xl">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-card to-card/60 border border-border p-8 md:p-14 text-center shadow-2xl">
+            {/* Glowing background inside CTA */}
+            <div className="absolute bottom-0 right-0 -z-10 h-64 w-64 rounded-full bg-primary/10 blur-[80px]" />
+            <div className="absolute top-0 left-0 -z-10 h-64 w-64 rounded-full bg-primary/5 blur-[80px]" />
+            
+            <div className="relative z-10 max-w-2xl mx-auto grid gap-6">
+              <span className="mx-auto inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary">
+                Join the PulseFit Tribe
+              </span>
+              <h2 className="text-3xl font-extrabold sm:text-5xl tracking-tight">
                 Ready to start your journey?
               </h2>
-              <p className="mx-auto max-w-xl text-primary-foreground/80">
+              <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
                 Join PulseFit today and get matched with a plan and trainer
                 that fits your goals — no long-term contracts.
               </p>
-              <div className="flex flex-wrap justify-center gap-3">
-                <Button size="lg" variant="secondary" asChild>
+              <div className="flex flex-wrap justify-center gap-4 pt-4">
+                <Button size="lg" className="px-8 font-bold uppercase tracking-wider text-xs py-6 shadow-lg shadow-primary/20" asChild>
                   <Link href="/register">
-                    Join Now <ArrowRight className="size-4" />
+                    Join Now <ArrowRight className="size-4 ml-2" />
                   </Link>
                 </Button>
                 <Button
                   size="lg"
                   variant="outline"
-                  className="border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+                  className="px-8 font-bold uppercase tracking-wider text-xs py-6 border-border hover:bg-secondary"
                   asChild
                 >
                   <Link href="/contact">Talk to Us</Link>
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </section>
     </div>
