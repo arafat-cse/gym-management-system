@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\Admin\StaffController;
 use App\Http\Controllers\Api\V1\Admin\SubscriptionController;
 use App\Http\Controllers\Api\V1\Admin\TrainerController as AdminTrainerController;
 use App\Http\Controllers\Api\V1\Admin\TrainingSessionController as AdminTrainingSessionController;
+use App\Http\Controllers\Api\V1\Public\BranchController as PublicBranchController;
 use App\Http\Controllers\Api\V1\Public\PaymentController as PublicPaymentController;
 use App\Http\Controllers\Api\V1\Public\PaymentNumberController as PublicPaymentNumberController;
 use App\Http\Controllers\Api\V1\Public\PricingController;
@@ -24,6 +25,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function () {
 
     Route::post('/register', [RegistrationController::class, 'store']);
+    Route::get('/branches', [PublicBranchController::class, 'index']);
     Route::get('/plans', [PricingController::class, 'index']);
     Route::get('/trainers', [PublicTrainerController::class, 'index']);
     Route::get('/trainers/{trainer}', [PublicTrainerController::class, 'show']);

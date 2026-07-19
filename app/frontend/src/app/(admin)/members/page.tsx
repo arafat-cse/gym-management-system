@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Eye, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 
 import type { Branch, Member, Paginated } from "@/lib/types";
 import { crudToast } from "@/lib/crud-toast";
@@ -74,6 +74,7 @@ export default function MembersPage() {
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Member | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [viewTarget, setViewTarget] = useState<Member | null>(null);
 
   async function load() {
     setLoading(true);
@@ -229,6 +230,9 @@ export default function MembersPage() {
                       )}
                     </TableCell>
                     <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" onClick={() => setViewTarget(member)}>
+                        <Eye className="size-4 text-primary" />
+                      </Button>
                       <Button variant="ghost" size="icon" onClick={() => openEdit(member)}>
                         <Pencil className="size-4" />
                       </Button>
@@ -382,6 +386,103 @@ export default function MembersPage() {
         onConfirm={handleDelete}
         loading={deleting}
       />
+
+      <Dialog open={!!viewTarget} onOpenChange={(open) => !open && setViewTarget(null)}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Member Details</DialogTitle>
+            <DialogDescription>
+              Full profile information for {viewTarget?.user.name}.
+            </DialogDescription>
+          </DialogHeader>
+          {viewTarget && (
+            <div className="grid gap-4 py-4 text-sm">
+              <div className="grid grid-cols-2 gap-4 border-b pb-4">
+                <div>
+                  <span className="font-semibold text-muted-foreground block text-xs uppercase tracking-wider">First Name</span>
+                  <span className="text-foreground font-medium text-base">{viewTarget.user.first_name}</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-muted-foreground block text-xs uppercase tracking-wider">Last Name</span>
+                  <span className="text-foreground font-medium text-base">{viewTarget.user.last_name}</span>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 border-b pb-4">
+                <div>
+                  <span className="font-semibold text-muted-foreground block text-xs uppercase tracking-wider">Email Address</span>
+                  <span className="text-foreground">{viewTarget.user.email}</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-muted-foreground block text-xs uppercase tracking-wider">Phone</span>
+                  <span className="text-foreground">{viewTarget.phone || viewTarget.user.phone || "—"}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 border-b pb-4">
+                <div>
+                  <span className="font-semibold text-muted-foreground block text-xs uppercase tracking-wider">Gender</span>
+                  <span className="text-foreground capitalize">{viewTarget.user.gender || "—"}</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-muted-foreground block text-xs uppercase tracking-wider">Date of Birth</span>
+                  <span className="text-foreground">{viewTarget.user.date_of_birth || "—"}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 border-b pb-4">
+                <div>
+                  <span className="font-semibold text-muted-foreground block text-xs uppercase tracking-wider">Branch</span>
+                  <span className="text-foreground">{viewTarget.branch?.name || "—"}</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-muted-foreground block text-xs uppercase tracking-wider">Joining Date</span>
+                  <span className="text-foreground">{viewTarget.user.joining_date || "—"}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 border-b pb-4">
+                <div>
+                  <span className="font-semibold text-muted-foreground block text-xs uppercase tracking-wider">Blood Group</span>
+                  <span className="text-foreground uppercase">{viewTarget.user.blood_group || "—"}</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-muted-foreground block text-xs uppercase tracking-wider">Religion</span>
+                  <span className="text-foreground capitalize">{viewTarget.user.religion || "—"}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 border-b pb-4">
+                <div>
+                  <span className="font-semibold text-muted-foreground block text-xs uppercase tracking-wider">NID Number</span>
+                  <span className="text-foreground">{viewTarget.user.nid_number || "—"}</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-muted-foreground block text-xs uppercase tracking-wider">Birth Certificate</span>
+                  <span className="text-foreground">{viewTarget.user.birth_certificate_number || "—"}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 border-b pb-4">
+                <div className="col-span-2">
+                  <span className="font-semibold text-muted-foreground block text-xs uppercase tracking-wider">Home Address</span>
+                  <span className="text-foreground">{viewTarget.address || "—"}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="font-semibold text-muted-foreground block text-xs uppercase tracking-wider">Emergency Contact</span>
+                  <span className="text-foreground">{viewTarget.user.emergency_contact_number || "—"}</span>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button type="button" onClick={() => setViewTarget(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

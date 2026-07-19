@@ -1,9 +1,10 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
+import type { Branch } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +27,7 @@ type FormState = {
   address: string;
   gender: "male" | "female" | "other" | "";
   date_of_birth: string;
+  branch_id: string;
 };
 
 const EMPTY_FORM: FormState = {
@@ -37,6 +39,7 @@ const EMPTY_FORM: FormState = {
   address: "",
   gender: "",
   date_of_birth: "",
+  branch_id: "",
 };
 
 export default function RegisterPage() {
@@ -52,8 +55,16 @@ function RegisterForm() {
   const searchParams = useSearchParams();
   const planId = searchParams.get("plan");
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [branches, setBranches] = useState<Branch[]>([]);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/branches")
+      .then((res) => res.json())
+      .then((data) => setBranches(Array.isArray(data) ? data : []))
+      .catch(() => setBranches([]));
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -72,6 +83,7 @@ function RegisterForm() {
           address: form.address || null,
           gender: form.gender || null,
           date_of_birth: form.date_of_birth || null,
+          branch_id: form.branch_id || null,
         }),
       });
       const data = await res.json();
@@ -152,7 +164,7 @@ function RegisterForm() {
                       id="first_name"
                       required
                       value={form.first_name}
-                      className="bg-background/50 border-border/60 focus:border-primary/50"
+                      className="bg-background border-border/60 focus:border-primary/50"
                       onChange={(e) => setForm({ ...form, first_name: e.target.value })}
                     />
                     {fieldError("first_name") && (
@@ -165,7 +177,7 @@ function RegisterForm() {
                       id="last_name"
                       required
                       value={form.last_name}
-                      className="bg-background/50 border-border/60 focus:border-primary/50"
+                      className="bg-background border-border/60 focus:border-primary/50"
                       onChange={(e) => setForm({ ...form, last_name: e.target.value })}
                     />
                     {fieldError("last_name") && (
@@ -181,7 +193,7 @@ function RegisterForm() {
                     type="email"
                     required
                     value={form.email}
-                    className="bg-background/50 border-border/60 focus:border-primary/50"
+                    className="bg-background border-border/60 focus:border-primary/50"
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                   />
                   {fieldError("email") && (
@@ -197,7 +209,7 @@ function RegisterForm() {
                     required
                     minLength={6}
                     value={form.password}
-                    className="bg-background/50 border-border/60 focus:border-primary/50"
+                    className="bg-background border-border/60 focus:border-primary/50"
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                   />
                   {fieldError("password") && (
@@ -211,7 +223,7 @@ function RegisterForm() {
                     <Input
                       id="phone"
                       value={form.phone}
-                      className="bg-background/50 border-border/60 focus:border-primary/50"
+                      className="bg-background border-border/60 focus:border-primary/50"
                       onChange={(e) => setForm({ ...form, phone: e.target.value })}
                     />
                   </div>
@@ -223,7 +235,7 @@ function RegisterForm() {
                         setForm({ ...form, gender: v === "none" ? "" : (v as FormState["gender"]) })
                       }
                     >
-                      <SelectTrigger className="bg-background/50 border-border/60 focus:border-primary/50">
+                      <SelectTrigger className="bg-background border-border/60 focus:border-primary/50">
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
                       <SelectContent>
@@ -237,11 +249,34 @@ function RegisterForm() {
                 </div>
 
                 <div className="grid gap-2">
+                  <Label className="text-xs font-semibold text-muted-foreground">Preferred Branch</Label>
+                  <Select
+                    value={form.branch_id || "none"}
+                    onValueChange={(v) => setForm({ ...form, branch_id: v === "none" ? "" : v })}
+                  >
+                    <SelectTrigger className="bg-background border-border/60 focus:border-primary/50">
+                      <SelectValue placeholder="Select a branch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No preference</SelectItem>
+                      {branches.map((branch) => (
+                        <SelectItem key={branch.id} value={String(branch.id)}>
+                          {branch.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {fieldError("branch_id") && (
+                    <p className="text-xs text-destructive">{fieldError("branch_id")}</p>
+                  )}
+                </div>
+
+                <div className="grid gap-2">
                   <Label htmlFor="address" className="text-xs font-semibold text-muted-foreground">Home Address</Label>
                   <Textarea
                     id="address"
                     value={form.address}
-                    className="bg-background/50 border-border/60 focus:border-primary/50 min-h-[80px]"
+                    className="bg-background border-border/60 focus:border-primary/50 min-h-[80px]"
                     onChange={(e) => setForm({ ...form, address: e.target.value })}
                   />
                 </div>

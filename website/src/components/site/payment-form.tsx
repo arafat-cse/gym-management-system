@@ -89,7 +89,7 @@ export function PaymentForm({
           <div className="grid gap-2">
             <Label className="text-xs font-semibold text-muted-foreground">Select Plan</Label>
             <Select value={planId} onValueChange={setPlanId}>
-              <SelectTrigger className="bg-background/50 border-border/60">
+              <SelectTrigger className="bg-background border-border/60">
                 <SelectValue placeholder="Choose a plan" />
               </SelectTrigger>
               <SelectContent>
@@ -111,7 +111,7 @@ export function PaymentForm({
               value={method}
               onValueChange={(v) => setMethod(v as "bkash" | "nagad")}
             >
-              <SelectTrigger className="bg-background/50 border-border/60">
+              <SelectTrigger className="bg-background border-border/60">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -145,7 +145,7 @@ export function PaymentForm({
               id="sender_number"
               required
               value={senderNumber}
-              className="bg-background/50 border-border/60"
+              className="bg-background border-border/60"
               onChange={(e) => setSenderNumber(e.target.value)}
             />
             {fieldError("sender_number") && (
@@ -161,7 +161,7 @@ export function PaymentForm({
               id="transaction_id"
               required
               value={transactionId}
-              className="bg-background/50 border-border/60"
+              className="bg-background border-border/60"
               onChange={(e) => setTransactionId(e.target.value)}
             />
             {fieldError("transaction_id") && (
@@ -177,7 +177,7 @@ export function PaymentForm({
               id="screenshot"
               type="file"
               accept="image/*"
-              className="bg-background/50 border-border/60"
+              className="bg-background border-border/60"
               onChange={(e) => setScreenshot(e.target.files?.[0] ?? null)}
             />
             {fieldError("screenshot") && (

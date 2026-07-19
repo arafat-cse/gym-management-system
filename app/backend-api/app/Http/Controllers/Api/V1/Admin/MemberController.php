@@ -13,7 +13,16 @@ class MemberController extends Controller
 {
     public function index()
     {
-        return Member::with(['user', 'branch'])->paginate(20);
+        return Member::with(['user', 'branch'])
+            ->where(function ($query) {
+                $query->whereHas('subscriptions')
+                    ->orWhereNotExists(function ($q) {
+                        $q->select(DB::raw(1))
+                          ->from('member_registrations')
+                          ->whereRaw('member_registrations.member_id = members.id');
+                    });
+            })
+            ->paginate(20);
     }
 
     public function store(MemberRequest $request)
