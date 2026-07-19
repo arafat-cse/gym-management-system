@@ -9,7 +9,7 @@ class TrainerController extends Controller
 {
     public function index()
     {
-        return Trainer::with(['branch', 'specializations'])
+        return Trainer::with(['user', 'branch', 'specializations'])
             ->where('status', 'active')
             ->get();
     }
@@ -18,6 +18,6 @@ class TrainerController extends Controller
     {
         abort_if($trainer->status !== 'active', 404);
 
-        return $trainer->load(['branch', 'specializations']);
+        return $trainer->load(['user', 'branch', 'specializations']);
     }
 }
