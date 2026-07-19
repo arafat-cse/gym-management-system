@@ -188,3 +188,58 @@ DELETE /api/v1/admin/staff/{id}         -> linked User o delete hoye jabe (casca
 - Shob route `auth:sanctum` + `role:admin` er niche — admin token chara 401 dibe.
 - Member/Staff delete korle underlying User o delete hoy (foreign key `cascadeOnDelete`) — relational integrity thik thake.
 - Branch delete korle linked Member/Staff er `branch_id` NULL hoye jabe (`nullOnDelete`), Member/Staff delete hobe na.
+
+## 10. Membership Plans (public list + admin CRUD)
+
+### Public — list active plans (no token lagbe na)
+```
+GET http://127.0.0.1:8123/api/v1/plans
+```
+
+### Admin CRUD
+```
+POST   /api/v1/admin/plans
+Authorization: Bearer <admin-token>
+Content-Type: application/json
+
+{
+  "name": "Gold Monthly",
+  "description": "Gold tier",
+  "price": 1500,
+  "duration_in_days": 30,
+  "features": ["gym-access", "locker"]
+}
+```
+```
+GET    /api/v1/admin/plans          (paginated, sob status shoho)
+GET    /api/v1/admin/plans/{id}
+PUT    /api/v1/admin/plans/{id}     body: kono field partial update
+DELETE /api/v1/admin/plans/{id}
+```
+
+## 11. Subscriptions (Admin) — member ke plan assign kora
+
+Payment gateway ekhono nai, tai admin direct `active` status diye subscription create korte pare — `end_date` automatic calculate hoy `start_date + plan.duration_in_days`.
+
+### Create subscription
+```
+POST http://127.0.0.1:8123/api/v1/admin/subscriptions
+Authorization: Bearer <admin-token>
+Content-Type: application/json
+
+{
+  "member_id": 1,
+  "membership_plan_id": 1
+}
+```
+Optional fields: `start_date` (default today), `price_paid` (default plan price), `status` (default `active`), `notes`.
+
+### List / Get / Update / Delete
+```
+GET    /api/v1/admin/subscriptions               (paginated, member.user + membership_plan loaded)
+GET    /api/v1/admin/subscriptions?member_id=1    (filter by member)
+GET    /api/v1/admin/subscriptions?status=active  (filter by status)
+GET    /api/v1/admin/subscriptions/{id}
+PUT    /api/v1/admin/subscriptions/{id}           body: status (pending|active|expired|cancelled), start_date, end_date, price_paid, notes
+DELETE /api/v1/admin/subscriptions/{id}
+```

@@ -1,3 +1,4 @@
+
 # GMS Backend API — Build Tracker
 
 Placeholder/empty files removed from repo (2026-07-15) to keep it clean. Full planned tree stays documented in the root `README.md`. This file tracks what's actually implemented, so future work can pick up step by step against the real repo state.
@@ -62,6 +63,40 @@ Verified over HTTP (curl, port 8123) — all passing:
 
 **Not yet built for these:** Public-facing endpoints (none needed — admin-only for now), Resource/transformer classes (raw model JSON returned instead), soft deletes, branch assignment validation (e.g. preventing deletion of a branch with active members).
 
-## Not started (removed placeholder files — see root README.md for full planned tree)
+## ✅ Implemented — Public registration (approval workflow) — added since last update
 
-Everything else in the original planned structure (remaining Public/Admin/User controllers, Requests, Resources, Models for MembershipPlan/Payment/Trainer/etc., Repositories, Services, Enums, Events, Listeners, Jobs, Notifications, Policies, Exceptions, Helpers, the remaining domain migrations for subscriptions/payments/trainers/diet/workouts/etc., remaining seeders and factories) was scaffolded empty earlier and has now been deleted — no code or files exist for these yet. Recreate a file only when actually implementing it, following the paths laid out in the root `README.md` structure diagram.
+- `database/migrations/2026_07_16_124420_create_member_registrations_table.php` — pending sign-up requests, own `password`/profile fields, `status` enum(pending,approved,rejected), `approved_by`/`approved_at`
+- `app/Models/MemberRegistration.php` — `belongsTo(Branch)`, `belongsTo(User, 'approved_by')`
+- `app/Http/Requests/Api/Public/MemberRegistrationRequest.php` — public sign-up validation (email unique across `users` + pending `member_registrations`)
+- `app/Http/Controllers/Api/V1/Public/RegistrationController.php` — `store()`, public, no auth
+- `app/Http/Controllers/Api/V1/Admin/MemberRegistrationController.php` — `index`, `show`, `approve` (creates `User(role=member)` + `Member` in a transaction), `reject`
+- `routes/api.php` — `POST /api/v1/register` (public), `/api/v1/admin/registrations*` under `auth:sanctum, role:admin,staff`
+- Note: `users` table since grew `first_name`/`last_name` (replacing plain `name`, `User::getNameAttribute()` derives it), plus `gender`/`blood_group`/`religion`/`nid_number`/`birth_certificate_number`/`emergency_contact_number`/`date_of_birth`/`joining_date` columns — carried over from registration to the real `User` on approval.
+
+## ✅ Implemented — MembershipPlan + Subscription
+
+- `database/migrations/2026_07_19_000001_create_membership_plans_table.php` — name, description, price, `duration_in_days`, `features` json, status enum(active,inactive)
+- `database/migrations/2026_07_19_000002_create_subscriptions_table.php` — `member_id` (FK→members, cascadeOnDelete), `membership_plan_id` (FK→membership_plans, cascadeOnDelete), price_paid, start_date, end_date, status enum(pending,active,expired,cancelled), notes
+- `app/Models/MembershipPlan.php` — `hasMany(Subscription)`
+- `app/Models/Subscription.php` — `belongsTo(Member)`, `belongsTo(MembershipPlan)`
+- `app/Models/Member.php` — added `subscriptions()` hasMany
+- `app/Http/Requests/Api/Admin/{PlanRequest,SubscriptionRequest}.php` — separate create/update rules
+- `app/Http/Controllers/Api/V1/Admin/PlanController.php` — full CRUD
+- `app/Http/Controllers/Api/V1/Admin/SubscriptionController.php` — index (filter by `member_id`/`status`), store (auto-computes `end_date` from plan's `duration_in_days`, defaults `price_paid` to plan price, defaults `status` to `active` since no payment gateway exists yet), show, update, destroy
+- `app/Http/Controllers/Api/V1/Public/PricingController.php` — `index()`, public, lists `status=active` plans only
+- `routes/api.php` — `GET /api/v1/plans` (public), `Route::apiResource('plans'|'subscriptions', ...)` inside the existing `auth:sanctum, role:admin` admin group
+
+Design note: no Payment/Invoice model exists yet, so `SubscriptionController@store` lets admin manually record `price_paid` and immediately mark the subscription `active` — this is the pre-payment-gateway manual path. Once the Payment module is built, subscription creation should move behind a payment-confirmed flow instead of being open to direct admin activation.
+
+Verified over HTTP (curl, port 8123, MySQL `gms` db, `php artisan migrate:fresh --seed`) — all passing:
+- `POST /api/v1/admin/plans` → 201
+- `GET /api/v1/plans` (no auth) → 200, only active plans
+- `POST /api/v1/admin/subscriptions` (`member_id`, `membership_plan_id`) → 201, `end_date` = `start_date` + plan duration, `status: active`
+- `GET /api/v1/admin/subscriptions` → 200, paginated, `member.user` + `membership_plan` eager-loaded
+- `PUT /api/v1/admin/subscriptions/{id}` (`status: cancelled`) → 200, updated
+
+**Not yet built for these:** Payment/Invoice models (SSLCommerz integration), automatic subscription expiry (no scheduled job yet — `status` stays whatever it was set to), Resource/transformer classes.
+
+## Not started (see root `README.md` for full planned tree)
+
+Everything else in the original planned structure — Trainer system (profile/schedule/specialization/training sessions), LeadInquiry, Payment/Invoice, Attendance, Diet (plans/meals/member assignment/progress), Workout (member workouts/exercises), Coupon/Discount, HealthInfo, Equipment/maintenance, Locker/MemberLocker, Review, LeaveRequest, Expense, plus the supporting Repositories, Services, Enums, Events, Listeners, Jobs, Notifications, Policies, Exceptions, Helpers layers — has no code or files yet. Recreate/add a file only when actually implementing it, following the paths laid out in the root `README.md` structure diagram.
