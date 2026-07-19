@@ -3,11 +3,8 @@
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Member;
 use App\Models\MemberRegistration;
-use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class MemberRegistrationController extends Controller
@@ -35,38 +32,7 @@ class MemberRegistrationController extends Controller
             ]);
         }
 
-        $member = DB::transaction(function () use ($registration, $request) {
-            $user = User::create([
-                'first_name' => $registration->first_name,
-                'last_name' => $registration->last_name,
-                'email' => $registration->email,
-                'phone' => $registration->phone,
-                'password' => $registration->password,
-                'role' => 'member',
-                'gender' => $registration->gender,
-                'blood_group' => $registration->blood_group,
-                'religion' => $registration->religion,
-                'nid_number' => $registration->nid_number,
-                'birth_certificate_number' => $registration->birth_certificate_number,
-                'emergency_contact_number' => $registration->emergency_contact_number,
-                'date_of_birth' => $registration->date_of_birth,
-                'joining_date' => $registration->joining_date,
-            ]);
-
-            $member = Member::create([
-                'user_id' => $user->id,
-                'branch_id' => $registration->branch_id,
-                'address' => $registration->address,
-            ]);
-
-            $registration->update([
-                'status' => 'approved',
-                'approved_by' => $request->user()->id,
-                'approved_at' => now(),
-            ]);
-
-            return $member;
-        });
+        $member = $registration->approveIntoMember($request->user()->id);
 
         return $member->load(['user', 'branch']);
     }

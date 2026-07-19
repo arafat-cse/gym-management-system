@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -40,7 +40,17 @@ const EMPTY_FORM: FormState = {
 };
 
 export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterForm />
+    </Suspense>
+  );
+}
+
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const planId = searchParams.get("plan");
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -71,7 +81,11 @@ export default function RegisterPage() {
         return;
       }
 
-      router.push("/register/success");
+      const registrationId = data.registration?.id;
+      const paymentUrl = planId
+        ? `/register/payment/${registrationId}?plan=${planId}`
+        : `/register/payment/${registrationId}`;
+      router.push(paymentUrl);
     } finally {
       setSubmitting(false);
     }
@@ -96,8 +110,9 @@ export default function RegisterPage() {
             Start your membership today
           </h1>
           <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
-            Fill out the form and our team will review your registration and
-            confirm your membership shortly. No payment required to apply.
+            Fill out the form, then pick a plan and pay via bKash/Nagad on the
+            next step. Our team verifies your payment and activates your
+            membership shortly after.
           </p>
           <div className="h-px bg-border/40 w-full my-2" />
           <ul className="grid gap-3 text-sm text-muted-foreground">
@@ -111,13 +126,13 @@ export default function RegisterPage() {
               <span className="flex size-5 items-center justify-center rounded-full bg-primary/10 text-primary">
                 ✓
               </span>
-              <span>Reviewed by our team within 1 business day</span>
+              <span>Pay via bKash or Nagad — no card needed</span>
             </li>
             <li className="flex items-center gap-2">
               <span className="flex size-5 items-center justify-center rounded-full bg-primary/10 text-primary">
                 ✓
               </span>
-              <span>Choose your plan after registration approval</span>
+              <span>Pick your plan right after this form</span>
             </li>
           </ul>
         </div>

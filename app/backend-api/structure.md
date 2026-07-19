@@ -129,6 +129,40 @@ Verified over HTTP (curl, port 8123, MySQL `gms` db, `php artisan migrate:fresh 
 
 **Not yet built for these:** Resource/transformer classes, trainer performance report endpoint (`/reports/trainer-performance`), schedule-conflict / double-booking checks, Review model (rating currently lives directly on `training_sessions.member_rating`, not a separate reviews table).
 
+## ✅ Implemented — Manual Payment (bKash/Nagad, no gateway) tied to registration
+
+No SSLCommerz/payment-gateway account exists, so payment is manual: admin publishes a bKash/Nagad number, the prospect sends money to it themselves and submits the transaction ID (+ optional screenshot) as proof; staff/admin verifies against their own bKash/Nagad statement and approves or rejects.
+
+- `database/migrations/2026_07_19_000007_add_member_id_to_member_registrations_table.php` — adds nullable `member_id` FK (nullOnDelete) to `member_registrations`, set once a registration is turned into a real `Member`
+- `database/migrations/2026_07_19_000008_create_payment_numbers_table.php` — `payment_numbers`: method enum(bkash,nagad), number, label, is_active — the admin-managed contact numbers shown to prospects on the frontend
+- `database/migrations/2026_07_19_000009_create_payments_table.php` — `payments`: `member_registration_id` (FK cascadeOnDelete), `membership_plan_id` (FK), method enum(bkash,nagad), sender_number, transaction_id (unique — blocks resubmitting/reusing the same trx id), amount, screenshot_path (nullable), status enum(pending,approved,rejected), rejection_reason, approved_by/approved_at
+- `app/Models/PaymentNumber.php` — plain model
+- `app/Models/Payment.php` — `belongsTo(MemberRegistration, MembershipPlan)`, `belongsTo(User, 'approved_by')`, appends `screenshot_url` (built from the `public` disk)
+- `app/Models/MemberRegistration.php` — added `member()` belongsTo, `payments()` hasMany, and a new **`approveIntoMember(int $approvedByUserId): Member`** method — this is the User+Member-creation logic that used to live inline in `MemberRegistrationController@approve`; it's now on the model so both the plain registration-approval path and the payment-approval path share one implementation instead of duplicating it
+- `app/Http/Controllers/Api/V1/Admin/MemberRegistrationController.php` — `approve()` simplified to just call `$registration->approveIntoMember(...)`
+- `app/Http/Requests/Api/Public/PaymentRequest.php`, `app/Http/Requests/Api/Admin/PaymentNumberRequest.php`
+- `app/Http/Controllers/Api/V1/Public/PaymentNumberController.php` — `index()`, public, active numbers only
+- `app/Http/Controllers/Api/V1/Public/PaymentController.php` — `store()`, public, `POST /registrations/{memberRegistration}/payments` — creates a `pending` Payment for that registration; rejects (422) if the registration isn't still `pending`; stores the optional `screenshot` file to `storage/app/public/payment-proofs`
+- `app/Http/Controllers/Api/V1/Admin/PaymentNumberController.php` — full CRUD (config-style resource, like Plans)
+- `app/Http/Controllers/Api/V1/Admin/PaymentController.php` — `index` (filter by status), `show`, `approve` (if the linked registration is still pending, calls `approveIntoMember()`; otherwise reuses the already-linked `member`; then creates an `active` Subscription for that member+plan with `price_paid` = the payment amount and `end_date` computed from the plan's duration; marks the payment `approved`), `reject` (marks `rejected` + reason, registration stays `pending` so the prospect can resubmit a corrected payment)
+- `routes/api.php` — `GET /api/v1/payment-numbers` (public), `POST /api/v1/registrations/{memberRegistration}/payments` (public); `admin/payment-numbers` apiResource under `role:admin`; `admin/payments{,/show,/approve,/reject}` under the existing `role:admin,staff` group (same group as registrations)
+- `php artisan storage:link` run so `storage/app/public` is served at `/storage` (needed for `screenshot_url`)
+
+Design note: this iteration only covers the **new-registration** payment path (a prospect paying to join for the first time). Renewal payments (an existing, already-approved member paying for their next billing cycle) aren't built yet — `payments.member_registration_id` is required (not nullable), so there's no way yet for an existing `Member` to submit a payment directly. Extending this to renewals is a cheap follow-up: add a nullable `member_id` column to `payments`, require exactly one of `member_registration_id`/`member_id`, and let `PaymentController@approve` extend/renew the existing subscription instead of creating the first one.
+
+Verified over HTTP (curl, port 8123, MySQL `gms` db, `php artisan migrate:fresh --seed`, real file upload) — all passing:
+- `POST /api/v1/admin/payment-numbers` → 201; `GET /api/v1/payment-numbers` (no auth) → 200, active numbers only
+- `POST /api/v1/register` → 201 pending registration
+- `POST /api/v1/registrations/{id}/payments` (multipart, with a real PNG file for `screenshot`) → 201, `screenshot_path` stored, `screenshot_url` resolves to `/storage/payment-proofs/...`
+- `GET /api/v1/admin/payments` (admin token) → 200, pending payment with `member_registration` + `membership_plan` eager-loaded
+- `POST /api/v1/admin/payments/{id}/approve` → 200, returns the new `active` Subscription; registration flips to `approved` with `member_id` set; `User(role=member)` + `Member` created
+- New member can immediately `POST /api/v1/user/login` with the password they registered with → 200, gets a Sanctum token
+- `POST .../approve` again on the same payment → `422` (already processed)
+- `POST /api/v1/admin/payments/{id2}/reject` with a reason → 200, `status: rejected`; registration stays `pending` (resubmission still allowed)
+- Submitting a payment with a `transaction_id` that already exists → `422` validation error (duplicate blocked at the DB/request-validation level)
+
+**Not yet built for these:** renewal-payment path for existing members (see design note above), Invoice/receipt generation (no PDF — a manual bKash/Nagad payment doesn't need one), admin dashboard summary/stats endpoints, Resource/transformer classes, rate-limiting on the public payment-submission endpoint (currently open to anyone who knows a registration id).
+
 ## Not started (see root `README.md` for full planned tree)
 
-Everything else in the original planned structure — LeadInquiry, Payment/Invoice, Attendance, Diet (plans/meals/member assignment/progress), Workout (member workouts/exercises), Coupon/Discount, HealthInfo, Equipment/maintenance, Locker/MemberLocker, Review, LeaveRequest, Expense, plus the supporting Repositories, Services, Enums, Events, Listeners, Jobs, Notifications, Policies, Exceptions, Helpers layers — has no code or files yet. Recreate/add a file only when actually implementing it, following the paths laid out in the root `README.md` structure diagram.
+Everything else in the original planned structure — LeadInquiry, Attendance, Diet (plans/meals/member assignment/progress), Workout (member workouts/exercises), Coupon/Discount, HealthInfo, Equipment/maintenance, Locker/MemberLocker, Review, LeaveRequest, Expense, plus the supporting Repositories, Services, Enums, Events, Listeners, Jobs, Notifications, Policies, Exceptions, Helpers layers — has no code or files yet. Recreate/add a file only when actually implementing it, following the paths laid out in the root `README.md` structure diagram.

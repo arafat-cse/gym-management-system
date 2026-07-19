@@ -30,6 +30,13 @@ export type TrainerUser = {
   name: string;
 };
 
+export type PaymentNumber = {
+  id: number;
+  method: "bkash" | "nagad";
+  number: string;
+  label: string | null;
+};
+
 export type Trainer = {
   id: number;
   specialization: string | null;

@@ -134,6 +134,32 @@ export type TrainingSession = {
   member: Member;
 };
 
+export type PaymentNumber = {
+  id: number;
+  method: "bkash" | "nagad";
+  number: string;
+  label: string | null;
+  is_active: boolean;
+};
+
+export type Payment = {
+  id: number;
+  member_registration_id: number;
+  membership_plan_id: number;
+  method: "bkash" | "nagad";
+  sender_number: string;
+  transaction_id: string;
+  amount: string;
+  screenshot_path: string | null;
+  screenshot_url: string | null;
+  status: "pending" | "approved" | "rejected";
+  rejection_reason: string | null;
+  approved_at: string | null;
+  created_at: string;
+  member_registration: MemberRegistration;
+  membership_plan: MembershipPlan;
+};
+
 export type Subscription = {
   id: number;
   member_id: number;

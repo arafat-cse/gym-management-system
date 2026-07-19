@@ -4,11 +4,15 @@ use App\Http\Controllers\Api\V1\Admin\AuthController as AdminAuthController;
 use App\Http\Controllers\Api\V1\Admin\BranchController;
 use App\Http\Controllers\Api\V1\Admin\MemberController;
 use App\Http\Controllers\Api\V1\Admin\MemberRegistrationController;
+use App\Http\Controllers\Api\V1\Admin\PaymentController as AdminPaymentController;
+use App\Http\Controllers\Api\V1\Admin\PaymentNumberController as AdminPaymentNumberController;
 use App\Http\Controllers\Api\V1\Admin\PlanController;
 use App\Http\Controllers\Api\V1\Admin\StaffController;
 use App\Http\Controllers\Api\V1\Admin\SubscriptionController;
 use App\Http\Controllers\Api\V1\Admin\TrainerController as AdminTrainerController;
 use App\Http\Controllers\Api\V1\Admin\TrainingSessionController as AdminTrainingSessionController;
+use App\Http\Controllers\Api\V1\Public\PaymentController as PublicPaymentController;
+use App\Http\Controllers\Api\V1\Public\PaymentNumberController as PublicPaymentNumberController;
 use App\Http\Controllers\Api\V1\Public\PricingController;
 use App\Http\Controllers\Api\V1\Public\RegistrationController;
 use App\Http\Controllers\Api\V1\Public\TrainerController as PublicTrainerController;
@@ -23,6 +27,8 @@ Route::prefix('v1')->group(function () {
     Route::get('/plans', [PricingController::class, 'index']);
     Route::get('/trainers', [PublicTrainerController::class, 'index']);
     Route::get('/trainers/{trainer}', [PublicTrainerController::class, 'show']);
+    Route::get('/payment-numbers', [PublicPaymentNumberController::class, 'index']);
+    Route::post('/registrations/{memberRegistration}/payments', [PublicPaymentController::class, 'store']);
 
     Route::prefix('admin')->group(function () {
         Route::post('/login', [AdminAuthController::class, 'login']);
@@ -46,6 +52,8 @@ Route::prefix('v1')->group(function () {
             Route::get('/training-sessions', [AdminTrainingSessionController::class, 'index']);
             Route::get('/training-sessions/{trainingSession}', [AdminTrainingSessionController::class, 'show']);
             Route::put('/training-sessions/{trainingSession}', [AdminTrainingSessionController::class, 'update']);
+
+            Route::apiResource('payment-numbers', AdminPaymentNumberController::class);
         });
 
         Route::middleware(['auth:sanctum', 'role:admin,staff'])->group(function () {
@@ -53,6 +61,11 @@ Route::prefix('v1')->group(function () {
             Route::get('/registrations/{memberRegistration}', [MemberRegistrationController::class, 'show']);
             Route::post('/registrations/{memberRegistration}/approve', [MemberRegistrationController::class, 'approve']);
             Route::post('/registrations/{memberRegistration}/reject', [MemberRegistrationController::class, 'reject']);
+
+            Route::get('/payments', [AdminPaymentController::class, 'index']);
+            Route::get('/payments/{payment}', [AdminPaymentController::class, 'show']);
+            Route::post('/payments/{payment}/approve', [AdminPaymentController::class, 'approve']);
+            Route::post('/payments/{payment}/reject', [AdminPaymentController::class, 'reject']);
         });
     });
 

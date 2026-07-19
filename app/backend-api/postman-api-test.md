@@ -337,3 +337,59 @@ Onno member er session dekhte gele (member_id mismatch) → `403`.
 - Trainer create/delete Member/Staff er moto — User + Trainer transaction e ekshathe, delete korle cascade.
 - Schedule-conflict / double-booking check ekhono nai — jekono time e book kora jay, trainer er actual `trainer_schedules` er against validate hoy na.
 - Review model alada nai — rating shorashori `training_sessions.member_rating` e thake, `rate()` call korle trainer er `rating_avg` shob completed+rated session er average hishebe recompute hoy.
+
+## 13. Manual Payment (bKash/Nagad) — registration + plan + payment proof → admin approve → Member+Subscription
+
+SSLCommerz nai, tai flow: admin ekta bKash/Nagad number publish kore rakhe → prospect (notun user) register kore → shei number e nijei taka pathay → transaction ID (+ optional screenshot) submit kore → staff/admin nijer bKash/Nagad statement dekhe match kore approve/reject kore. Approve hole ekshathe: `User` + `Member` create hoy (jodi ageo na hoye thake), ar shei plan diye ekta `active` `Subscription` create hoy.
+
+### Admin — payment numbers manage (config, jekhane taka pathabe)
+```
+POST   /api/v1/admin/payment-numbers
+Authorization: Bearer <admin-token>
+Content-Type: application/json
+
+{ "method": "bkash", "number": "01700000000", "label": "Merchant" }
+```
+```
+GET    /api/v1/admin/payment-numbers
+PUT    /api/v1/admin/payment-numbers/{id}
+DELETE /api/v1/admin/payment-numbers/{id}
+```
+
+### Public — kon number e pathabe dekhe (no token)
+```
+GET http://127.0.0.1:8123/api/v1/payment-numbers
+```
+
+### Public — register (age er moto), tarpor payment submit
+```
+POST /api/v1/register    body: first_name, last_name, email, password, ... (age er section dekho)
+```
+Response e `registration.id` pawa jabe — oita diye:
+```
+POST http://127.0.0.1:8123/api/v1/registrations/{registrationId}/payments
+Content-Type: multipart/form-data
+
+membership_plan_id: 1
+method: bkash
+sender_number: 01711111111
+transaction_id: TRX123ABC     (unique lagbe, same ID abar submit hobe na)
+amount: 1500
+screenshot: (file, optional, image, max 2MB)
+```
+Response e `payment.screenshot_url` pawa jabe (image thakle).
+
+### Admin/Staff — payment review + approve/reject
+```
+GET  /api/v1/admin/payments                  (filter: ?status=pending)
+GET  /api/v1/admin/payments/{id}
+POST /api/v1/admin/payments/{id}/approve      -> 200, returns new active Subscription; User+Member create hoy (jodi na hoye thake)
+POST /api/v1/admin/payments/{id}/reject       body: {"rejection_reason": "..."}  -> registration pending e thake, resubmit kora jabe
+```
+Approve er por notun member shathe shathe `/api/v1/user/login` diye login korte parbe (registration e diya password diye).
+
+## Notes (Payment)
+
+- Ekbar approve/reject hoye gele shei payment abar process kora jay na (`422`).
+- Shomoy transaction_id diye dutobar submit korte gele validation e atke jay (`unique:payments,transaction_id`).
+- Ekhono sudhu **notun registration** er jonno — existing approved member er renewal payment (porer mash er plan kena) ei flow diye hoy na, seta porer step.

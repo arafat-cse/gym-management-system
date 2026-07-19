@@ -5,7 +5,6 @@ import type { MembershipPlan } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 
 export function PricingCard({
   plan,
@@ -61,7 +60,7 @@ export function PricingCard({
           className="w-full font-bold uppercase tracking-wider text-xs py-5"
           variant={highlighted ? "default" : "secondary"}
         >
-          <Link href="/register">Get Started Now</Link>
+          <Link href={`/register?plan=${plan.id}`}>Get Started Now</Link>
         </Button>
       </CardFooter>
     </Card>

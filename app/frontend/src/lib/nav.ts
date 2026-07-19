@@ -8,6 +8,8 @@ import {
   Dumbbell,
   UserPlus,
   CalendarClock,
+  Wallet,
+  Smartphone,
   type LucideIcon,
 } from "lucide-react";
 
@@ -26,5 +28,7 @@ export const adminNav: NavItem[] = [
   { title: "Subscriptions", href: "/subscriptions", icon: ClipboardList },
   { title: "Trainers", href: "/trainers", icon: Dumbbell },
   { title: "Registrations", href: "/registrations", icon: UserPlus },
+  { title: "Payments", href: "/payments", icon: Wallet },
+  { title: "Payment Numbers", href: "/payment-numbers", icon: Smartphone },
   { title: "Training Sessions", href: "/training-sessions", icon: CalendarClock },
 ];

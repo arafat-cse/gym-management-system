@@ -19,7 +19,7 @@ function SelectContent(_props: { children: React.ReactNode }) {
   return null;
 }
 
-function SelectTrigger(_props: { children?: React.ReactNode }) {
+function SelectTrigger(_props: { children?: React.ReactNode; className?: string }) {
   return null;
 }
 
