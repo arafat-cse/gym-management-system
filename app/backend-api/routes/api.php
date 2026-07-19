@@ -7,15 +7,22 @@ use App\Http\Controllers\Api\V1\Admin\MemberRegistrationController;
 use App\Http\Controllers\Api\V1\Admin\PlanController;
 use App\Http\Controllers\Api\V1\Admin\StaffController;
 use App\Http\Controllers\Api\V1\Admin\SubscriptionController;
+use App\Http\Controllers\Api\V1\Admin\TrainerController as AdminTrainerController;
+use App\Http\Controllers\Api\V1\Admin\TrainingSessionController as AdminTrainingSessionController;
 use App\Http\Controllers\Api\V1\Public\PricingController;
 use App\Http\Controllers\Api\V1\Public\RegistrationController;
+use App\Http\Controllers\Api\V1\Public\TrainerController as PublicTrainerController;
 use App\Http\Controllers\Api\V1\User\AuthController as UserAuthController;
+use App\Http\Controllers\Api\V1\User\TrainerController as UserTrainerController;
+use App\Http\Controllers\Api\V1\User\TrainingSessionController as UserTrainingSessionController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
 
     Route::post('/register', [RegistrationController::class, 'store']);
     Route::get('/plans', [PricingController::class, 'index']);
+    Route::get('/trainers', [PublicTrainerController::class, 'index']);
+    Route::get('/trainers/{trainer}', [PublicTrainerController::class, 'show']);
 
     Route::prefix('admin')->group(function () {
         Route::post('/login', [AdminAuthController::class, 'login']);
@@ -28,6 +35,17 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('staff', StaffController::class);
             Route::apiResource('plans', PlanController::class);
             Route::apiResource('subscriptions', SubscriptionController::class);
+
+            Route::apiResource('trainers', AdminTrainerController::class);
+            Route::get('/trainers/{trainer}/schedule', [AdminTrainerController::class, 'schedule']);
+            Route::put('/trainers/{trainer}/schedule', [AdminTrainerController::class, 'updateSchedule']);
+            Route::get('/trainers/{trainer}/specializations', [AdminTrainerController::class, 'specializations']);
+            Route::post('/trainers/{trainer}/specializations', [AdminTrainerController::class, 'addSpecialization']);
+            Route::delete('/trainers/{trainer}/specializations/{specialization}', [AdminTrainerController::class, 'removeSpecialization']);
+
+            Route::get('/training-sessions', [AdminTrainingSessionController::class, 'index']);
+            Route::get('/training-sessions/{trainingSession}', [AdminTrainingSessionController::class, 'show']);
+            Route::put('/training-sessions/{trainingSession}', [AdminTrainingSessionController::class, 'update']);
         });
 
         Route::middleware(['auth:sanctum', 'role:admin,staff'])->group(function () {
@@ -43,6 +61,16 @@ Route::prefix('v1')->group(function () {
 
         Route::middleware(['auth:sanctum', 'role:staff,trainer,member'])->group(function () {
             Route::post('/logout', [UserAuthController::class, 'logout']);
+            Route::get('/trainers', [UserTrainerController::class, 'index']);
+            Route::get('/trainers/{trainer}', [UserTrainerController::class, 'show']);
+        });
+
+        Route::middleware(['auth:sanctum', 'role:member'])->group(function () {
+            Route::get('/training-sessions', [UserTrainingSessionController::class, 'index']);
+            Route::post('/training-sessions', [UserTrainingSessionController::class, 'store']);
+            Route::get('/training-sessions/{trainingSession}', [UserTrainingSessionController::class, 'show']);
+            Route::post('/training-sessions/{trainingSession}/cancel', [UserTrainingSessionController::class, 'cancel']);
+            Route::post('/training-sessions/{trainingSession}/rating', [UserTrainingSessionController::class, 'rate']);
         });
     });
 });

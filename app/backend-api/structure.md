@@ -97,6 +97,38 @@ Verified over HTTP (curl, port 8123, MySQL `gms` db, `php artisan migrate:fresh 
 
 **Not yet built for these:** Payment/Invoice models (SSLCommerz integration), automatic subscription expiry (no scheduled job yet — `status` stays whatever it was set to), Resource/transformer classes.
 
+## ✅ Implemented — Trainer system (profile, schedule, specializations, training sessions)
+
+- `database/migrations/2026_07_19_000003_create_trainers_table.php` — `user_id` (FK→users, unique, cascadeOnDelete), `branch_id` (FK→branches, nullable, nullOnDelete), employee_id (unique), specialization, certifications json, experience_years, hourly_rate, session_rate, bio, rating_avg, total_sessions, status enum(active,on_leave,inactive), join_date
+- `database/migrations/2026_07_19_000004_create_trainer_specializations_table.php` — `trainer_id` FK cascadeOnDelete, specialization_name, certification_level enum(beginner,intermediate,advanced,expert), certification_date, expiry_date, issuing_authority
+- `database/migrations/2026_07_19_000005_create_trainer_schedules_table.php` — `trainer_id` FK cascadeOnDelete, day_of_week (1-7), start_time, end_time, is_available, max_sessions, notes
+- `database/migrations/2026_07_19_000006_create_training_sessions_table.php` — `trainer_id`/`member_id` FK cascadeOnDelete, `branch_id` FK nullOnDelete, session_date, start_time, end_time, session_type enum(personal,group,online), status enum(pending,confirmed,completed,cancelled,no_show), fee, payment_status enum(paid,pending,refunded), notes, member_rating, trainer_notes
+- `app/Models/{Trainer,TrainerSpecialization,TrainerSchedule,TrainingSession}.php` — Trainer `belongsTo(User,Branch)` + `hasMany(specializations,schedules,trainingSessions)`; others `belongsTo` back
+- `app/Models/User.php` — added `trainer()` hasOne; `app/Models/Member.php` — added `trainingSessions()` hasMany
+- `app/Http/Requests/Api/Admin/{TrainerRequest,TrainerScheduleRequest,TrainerSpecializationRequest,TrainingSessionRequest}.php`, `app/Http/Requests/Api/User/TrainingSessionRequest.php`
+- `app/Http/Controllers/Api/V1/Admin/TrainerController.php` — full CRUD (User+Trainer created together in a transaction, `role=trainer`, same pattern as Member/Staff) + `schedule()`/`updateSchedule()` (full replace: deletes all existing schedule rows, recreates from the posted array) + `specializations()`/`addSpecialization()`/`removeSpecialization()`
+- `app/Http/Controllers/Api/V1/Admin/TrainingSessionController.php` — `index` (filter by status/trainer_id/member_id), `show`, `update` (status/fee/payment_status/reschedule/trainer_notes; increments `trainer.total_sessions` on the pending/confirmed → `completed` transition)
+- `app/Http/Controllers/Api/V1/Public/TrainerController.php` — `index`/`show`, public, `status=active` only, no auth
+- `app/Http/Controllers/Api/V1/User/TrainerController.php` — `index`/`show` for logged-in staff/trainer/member (browse, richer `show` including schedules)
+- `app/Http/Controllers/Api/V1/User/TrainingSessionController.php` — member-only (`role:member`): `index` (own sessions), `store` (book — `fee` snapshots `trainer.session_rate` at booking time), `show`, `cancel` (only from pending/confirmed), `rate` (only on `completed`, recomputes `trainer.rating_avg` as the avg of all rated sessions); all four action methods check `member_id` ownership and 403 otherwise
+- `routes/api.php` — `GET /api/v1/trainers[/{id}]` (public); `admin/trainers*` + `admin/training-sessions*` under `role:admin`; `user/trainers*` under the existing `role:staff,trainer,member` group; `user/training-sessions*` under a new `role:member`-only group
+
+Design note: no double-booking / schedule-conflict validation yet — `store()` trusts the submitted `session_date`/`start_time`/`end_time` without checking against the trainer's `trainer_schedules` or existing sessions. `updateSchedule()` is a destructive full-replace by design (delete-all-then-recreate) since the whole week's schedule is meant to be submitted together each time, not patched entry-by-entry.
+
+Verified over HTTP (curl, port 8123, MySQL `gms` db, `php artisan migrate:fresh --seed`) — all passing:
+- `POST /api/v1/admin/trainers` → 201, creates `User(role=trainer)` + `Trainer`
+- `PUT /api/v1/admin/trainers/{id}/schedule` → 200, replaces schedule rows
+- `POST /api/v1/admin/trainers/{id}/specializations` → 201
+- `GET /api/v1/trainers` (public, no auth) → 200, active trainers with branch+specializations
+- `GET /api/v1/user/trainers` (member token) → 200
+- `POST /api/v1/user/training-sessions` (member token, `trainer_id`) → 201, `fee` snapshotted from trainer's `session_rate`, `status: pending`
+- `PUT /api/v1/admin/training-sessions/{id}` (`status: completed`) → 200, trainer's `total_sessions` incremented 0→1
+- `POST /api/v1/user/training-sessions/{id}/rating` (`member_rating: 5`) on the completed session → 200, trainer's `rating_avg` recomputed to `5.00`
+- `POST .../cancel` on a pending session → 200, `status: cancelled`; calling `cancel` again → `422` (already processed)
+- Member A calling `GET /api/v1/user/training-sessions/{id}` on Member B's session → `403`
+
+**Not yet built for these:** Resource/transformer classes, trainer performance report endpoint (`/reports/trainer-performance`), schedule-conflict / double-booking checks, Review model (rating currently lives directly on `training_sessions.member_rating`, not a separate reviews table).
+
 ## Not started (see root `README.md` for full planned tree)
 
-Everything else in the original planned structure — Trainer system (profile/schedule/specialization/training sessions), LeadInquiry, Payment/Invoice, Attendance, Diet (plans/meals/member assignment/progress), Workout (member workouts/exercises), Coupon/Discount, HealthInfo, Equipment/maintenance, Locker/MemberLocker, Review, LeaveRequest, Expense, plus the supporting Repositories, Services, Enums, Events, Listeners, Jobs, Notifications, Policies, Exceptions, Helpers layers — has no code or files yet. Recreate/add a file only when actually implementing it, following the paths laid out in the root `README.md` structure diagram.
+Everything else in the original planned structure — LeadInquiry, Payment/Invoice, Attendance, Diet (plans/meals/member assignment/progress), Workout (member workouts/exercises), Coupon/Discount, HealthInfo, Equipment/maintenance, Locker/MemberLocker, Review, LeaveRequest, Expense, plus the supporting Repositories, Services, Enums, Events, Listeners, Jobs, Notifications, Policies, Exceptions, Helpers layers — has no code or files yet. Recreate/add a file only when actually implementing it, following the paths laid out in the root `README.md` structure diagram.

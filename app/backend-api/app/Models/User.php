@@ -89,4 +89,9 @@ class User extends Authenticatable
     {
         return $this->hasOne(Staff::class);
     }
+
+    public function trainer(): HasOne
+    {
+        return $this->hasOne(Trainer::class);
+    }
 }

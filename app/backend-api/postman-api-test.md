@@ -243,3 +243,97 @@ GET    /api/v1/admin/subscriptions/{id}
 PUT    /api/v1/admin/subscriptions/{id}           body: status (pending|active|expired|cancelled), start_date, end_date, price_paid, notes
 DELETE /api/v1/admin/subscriptions/{id}
 ```
+
+## 12. Trainers (public browse + admin CRUD + schedule/specializations + booking)
+
+### Public — browse active trainers (no token lagbe na)
+```
+GET http://127.0.0.1:8123/api/v1/trainers
+GET http://127.0.0.1:8123/api/v1/trainers/{id}
+```
+
+### Admin — create trainer (User + Trainer ekshathe create hoy, role: trainer)
+```
+POST http://127.0.0.1:8123/api/v1/admin/trainers
+Authorization: Bearer <admin-token>
+Content-Type: application/json
+
+{
+  "first_name": "Kabir",
+  "last_name": "Hossain",
+  "email": "kabir@gms.test",
+  "password": "password",
+  "branch_id": 1,
+  "specialization": "CrossFit",
+  "session_rate": 800
+}
+```
+```
+GET    /api/v1/admin/trainers          (paginated)
+GET    /api/v1/admin/trainers/{id}     (+ specializations + schedules loaded)
+PUT    /api/v1/admin/trainers/{id}
+DELETE /api/v1/admin/trainers/{id}     -> linked User o delete hoye jabe (cascade)
+```
+
+### Admin — set weekly schedule (full replace — pura array pathate hobe, patch na)
+```
+PUT /api/v1/admin/trainers/{id}/schedule
+Authorization: Bearer <admin-token>
+Content-Type: application/json
+
+{
+  "schedules": [
+    {"day_of_week": 1, "start_time": "09:00", "end_time": "17:00"},
+    {"day_of_week": 3, "start_time": "09:00", "end_time": "17:00"}
+  ]
+}
+```
+`GET /api/v1/admin/trainers/{id}/schedule` — current schedule dekhar jonno.
+
+### Admin — specializations
+```
+GET    /api/v1/admin/trainers/{id}/specializations
+POST   /api/v1/admin/trainers/{id}/specializations   body: {"specialization_name": "Yoga", "certification_level": "advanced"}
+DELETE /api/v1/admin/trainers/{id}/specializations/{specializationId}
+```
+
+### Admin — training sessions (view + status update, no create — member e create kore)
+```
+GET /api/v1/admin/training-sessions                    (filter: ?status=, ?trainer_id=, ?member_id=)
+GET /api/v1/admin/training-sessions/{id}
+PUT /api/v1/admin/training-sessions/{id}                body: status (pending|confirmed|completed|cancelled|no_show), fee, payment_status, trainer_notes
+```
+`status: completed` e set korle trainer er `total_sessions` counter automatic +1 hoy.
+
+### User (member) — browse trainers + book session
+```
+GET  /api/v1/user/trainers                              (staff/trainer/member shobai dekhte pare)
+GET  /api/v1/user/trainers/{id}                          (+ schedules shoho)
+```
+```
+POST /api/v1/user/training-sessions
+Authorization: Bearer <member-token>
+Content-Type: application/json
+
+{
+  "trainer_id": 1,
+  "session_date": "2026-07-20",
+  "start_time": "10:00",
+  "end_time": "11:00"
+}
+```
+`fee` automatic trainer er `session_rate` theke snapshot hoy, `status: pending` diye shuru hoy.
+
+```
+GET  /api/v1/user/training-sessions                      (nijer sob session)
+GET  /api/v1/user/training-sessions/{id}
+POST /api/v1/user/training-sessions/{id}/cancel           (pending/confirmed obostha theke)
+POST /api/v1/user/training-sessions/{id}/rating           body: {"member_rating": 5}  — sudhu completed session e
+```
+Onno member er session dekhte gele (member_id mismatch) → `403`.
+
+## Notes (Trainer)
+
+- Trainer create/delete Member/Staff er moto — User + Trainer transaction e ekshathe, delete korle cascade.
+- Schedule-conflict / double-booking check ekhono nai — jekono time e book kora jay, trainer er actual `trainer_schedules` er against validate hoy na.
+- Review model alada nai — rating shorashori `training_sessions.member_rating` e thake, `rate()` call korle trainer er `rating_avg` shob completed+rated session er average hishebe recompute hoy.

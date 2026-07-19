@@ -24,4 +24,9 @@ class Member extends Model
     {
         return $this->hasMany(Subscription::class);
     }
+
+    public function trainingSessions(): HasMany
+    {
+        return $this->hasMany(TrainingSession::class);
+    }
 }
