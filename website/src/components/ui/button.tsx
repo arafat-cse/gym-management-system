@@ -44,13 +44,19 @@ export function Button({
 
   if (asChild && React.isValidElement(children)) {
     const child = children as React.ReactElement<{ className?: string; onClick?: React.MouseEventHandler }>;
+    const { onClick, ...restProps } = props as { onClick?: React.MouseEventHandler } & typeof props;
+    const mergedOnClick =
+      onClick || child.props.onClick
+        ? (e: React.MouseEvent) => {
+            onClick?.(e as never);
+            child.props.onClick?.(e);
+          }
+        : undefined;
+
     return React.cloneElement(child, {
-      ...props,
+      ...restProps,
       className: cn(classes, child.props.className),
-      onClick: (e: React.MouseEvent) => {
-        props.onClick?.(e as never);
-        child.props.onClick?.(e);
-      },
+      ...(mergedOnClick ? { onClick: mergedOnClick } : {}),
     } as Partial<typeof child.props>);
   }
 

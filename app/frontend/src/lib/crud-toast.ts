@@ -1,4 +1,4 @@
-import { toast } from "sonner";
+import { toast } from "@/lib/toast-store";
 
 export const crudToast = {
   created: (entity: string) => toast.success(`${entity} created.`),
