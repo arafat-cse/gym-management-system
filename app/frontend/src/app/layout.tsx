@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import { Toaster } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/toaster";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -35,7 +34,7 @@ export default function RootLayout({
           "font-sans antialiased"
         )}
       >
-        <TooltipProvider>{children}</TooltipProvider>
+        {children}
         <Toaster />
       </body>
     </html>
