@@ -19,7 +19,7 @@ function SelectContent(_props: { children: React.ReactNode }) {
   return null;
 }
 
-function SelectTrigger(_props: { children?: React.ReactNode }) {
+function SelectTrigger(_props: { className?: string; children?: React.ReactNode }) {
   return null;
 }
 
@@ -30,7 +30,10 @@ function SelectValue(_props: { placeholder?: string }) {
 
 type SelectProps = {
   value?: string;
-  onValueChange?: (value: string) => void;
+  // Method-shorthand signature (not an arrow-function property) so callers can
+  // narrow the parameter to a literal union, e.g. `onValueChange={(v: "a"|"b") => ...}`
+  // — TS checks method params bivariantly but arrow-property params contravariantly.
+  onValueChange?(value: string): void;
   className?: string;
   children: React.ReactNode;
 };
@@ -38,6 +41,7 @@ type SelectProps = {
 function Select({ value, onValueChange, className, children }: SelectProps) {
   const options: { value: string; label: React.ReactNode; disabled?: boolean }[] = [];
   let placeholder: string | undefined;
+  let triggerClassName: string | undefined;
 
   React.Children.forEach(children, (child) => {
     if (!React.isValidElement(child)) return;
@@ -53,7 +57,8 @@ function Select({ value, onValueChange, className, children }: SelectProps) {
     }
 
     if (child.type === SelectTrigger) {
-      const triggerProps = child.props as { children?: React.ReactNode };
+      const triggerProps = child.props as { className?: string; children?: React.ReactNode };
+      triggerClassName = triggerProps.className;
       React.Children.forEach(triggerProps.children, (grandchild) => {
         if (React.isValidElement(grandchild) && grandchild.type === SelectValue) {
           placeholder = (grandchild.props as { placeholder?: string }).placeholder;
@@ -68,6 +73,7 @@ function Select({ value, onValueChange, className, children }: SelectProps) {
       onChange={(e) => onValueChange?.(e.target.value)}
       className={cn(
         "flex h-9 w-full items-center rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+        triggerClassName,
         className
       )}
     >
