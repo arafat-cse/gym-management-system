@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import { Toaster } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/toaster";
 import { SiteNavbar } from "@/components/site/navbar";
 import { SiteFooter } from "@/components/site/footer";
 
@@ -55,13 +54,11 @@ export default function RootLayout({
           "font-sans antialiased"
         )}
       >
-        <TooltipProvider>
-          <div className="flex min-h-screen flex-col">
-            <SiteNavbar />
-            <main className="flex-1">{children}</main>
-            <SiteFooter />
-          </div>
-        </TooltipProvider>
+        <div className="flex min-h-screen flex-col">
+          <SiteNavbar />
+          <main className="flex-1">{children}</main>
+          <SiteFooter />
+        </div>
         <Toaster />
       </body>
     </html>
