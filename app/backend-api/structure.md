@@ -405,3 +405,41 @@ Verified over HTTP (curl, port 8001) — all passing:
 ## Backend API — planned tree fully implemented
 
 All 16 domains from the original planned structure now have real code (Auth/RBAC, Branches/Members/Staff, Public registration, MembershipPlan/Subscription, Trainer system, Manual Payment, Attendance, LeadInquiry, Coupon/Discount, Diet, Workout, HealthInfo, Review, Equipment, Locker, LeaveRequest, Expense). Still genuinely missing across the board (not domain-specific, cross-cutting): Resource/transformer classes (raw model JSON everywhere instead), the Repositories/Services/Enums-as-classes/Events/Listeners/Jobs/Notifications/Policies/Exceptions/Helpers layers from the README's aspirational structure (this codebase does the equivalent logic directly in controllers/models instead), report endpoints (`/reports/revenue`, `/reports/attendance`, `/reports/trainer-performance`), and scheduled jobs (subscription expiry, maintenance reminders). See each section above for what's specifically left for that domain.
+
+## 🔲 Remaining Work (as of 2026-07-20)
+
+Everything below is a real, known gap — not a guess. Pick items off this list for the next session.
+
+### Backend — cross-cutting (affects every module)
+- No Resource/API-transformer classes anywhere — every endpoint returns raw Eloquent model JSON (includes hidden internals like timestamps on every row, no versioned response shape).
+- No Policy classes — ownership/authorization checks are inline `abort_if()` calls duplicated per controller instead of centralized.
+- No Service/Repository layer, no custom Enum classes, no Events/Listeners, no Jobs, no Notifications — all business logic lives directly in controllers/models. Works, but means e.g. "send an email on approval" has nowhere to hook into.
+- No rate limiting on public endpoints (`/register`, `/inquiries`, `/registrations/{id}/payments`) — currently open to anyone who knows/guesses an id.
+
+### Backend — feature gaps
+- **Reports**: `/admin/reports/revenue`, `/admin/reports/attendance`, `/admin/reports/trainer-performance` from the README's route list were never built. No revenue/analytics endpoint exists at all.
+- **Scheduled jobs**: no cron/queue job for auto-expiring subscriptions past `end_date` (status just sits stale), no equipment-maintenance-due reminder, no diet-progress reminder.
+- **Renewal payments**: `payments.member_registration_id` is required (not nullable) — an existing approved member has no way to submit a payment for their *next* billing cycle, only brand-new registrations can pay. Needs a nullable `member_id` column + "exactly one of registration/member" validation + `PaymentController@approve` extending the existing subscription instead of always creating a new one.
+- **Coupons**: only a global `max_uses` cap exists — no per-member usage limit, so one member could reuse the same coupon across multiple registrations.
+- **Training sessions**: no schedule-conflict / double-booking check — `store()` trusts the submitted date/time against nothing (not the trainer's `trainer_schedules`, not existing sessions).
+- **Lockers**: admin-only assignment — no member-facing "request a locker" self-service endpoint.
+- **Password reset**: no forgot-password flow anywhere (README's frontend structure has a `/forgot-password` page planned but there's no backend endpoint to support it, admin or user).
+- **Trainer rates/bio**: trainer self-service intentionally excludes editing `bio`/`hourly_rate`/`session_rate` (kept admin-only) — fine as a design choice, but worth confirming that's still wanted before a trainer asks "why can't I fix my bio typo."
+
+### Admin dashboard (`app/frontend`)
+- Dashboard overview (`/dashboard`) only shows Branches/Members/Staff/Active-Subscriptions stat cards — none of the 11 newer modules (Attendance, Coupons, Diet, Workouts, Reviews, Equipment, Lockers, Leave Requests, Expenses) have a dashboard tile.
+- No revenue/attendance/trainer-performance chart or report page (blocked on the missing backend report endpoints above).
+- Member/Staff/Trainer detail views don't cross-link to that person's own attendance, diet, workouts, or payments — those all live on separate flat admin list pages instead.
+- No pagination controls on any list page — every table fetches a flat `per_page=20/50/100` with no next/prev, so lists beyond that size are invisible in the UI (data still exists, just not reachable by scrolling).
+
+### Website (public marketing site)
+- Public `/trainers/[id]` page doesn't show reviews (the backend's public `TrainerController` never got a `reviews()` method — only the authenticated `/user/trainers/{id}/reviews` one exists). A prospect can't see trainer reviews before signing up.
+- Contact form doesn't let a visitor pick a membership plan they're interested in, even though `lead_inquiries.membership_plan_id` exists on the backend — the field is just never sent.
+- No coupon code entry anywhere pre-registration (it's only usable at the payment step, after a registration already exists) — can't advertise "use CODE at signup" on the pricing page itself.
+
+### User portal (`app/frontend/portal`)
+- No forgot-password flow (matches the backend gap above).
+- No pagination in any portal list (same flat `per_page=N` limitation as the admin dashboard).
+- Staff portal is thin by design — only Leave Requests, because that's the only staff self-service the backend currently exposes (no staff attendance/shift tracking exists at all, admin or self-service).
+- Diet: member can't request cancelling/leaving their own assigned diet plan — only admin can change `member_diets.status`.
+- No email/SMS notifications anywhere in the product (registration approved, payment approved/rejected, leave request decided, session confirmed) — there's no Notification layer on the backend to hook into yet (see cross-cutting gap above).
