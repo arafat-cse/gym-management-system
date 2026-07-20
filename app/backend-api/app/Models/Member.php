@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Member extends Model
 {
@@ -28,5 +29,35 @@ class Member extends Model
     public function trainingSessions(): HasMany
     {
         return $this->hasMany(TrainingSession::class);
+    }
+
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(Attendance::class);
+    }
+
+    public function memberDiets(): HasMany
+    {
+        return $this->hasMany(MemberDiet::class);
+    }
+
+    public function memberWorkouts(): HasMany
+    {
+        return $this->hasMany(MemberWorkout::class);
+    }
+
+    public function healthInfo(): HasOne
+    {
+        return $this->hasOne(HealthInfo::class);
+    }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    public function memberLocker(): HasOne
+    {
+        return $this->hasOne(MemberLocker::class);
     }
 }

@@ -20,4 +20,13 @@ class TrainerController extends Controller
 
         return $trainer->load(['branch', 'specializations', 'schedules']);
     }
+
+    public function reviews(Trainer $trainer)
+    {
+        return $trainer->reviews()
+            ->with('member.user')
+            ->where('status', 'approved')
+            ->latest()
+            ->paginate(20);
+    }
 }

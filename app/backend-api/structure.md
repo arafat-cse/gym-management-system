@@ -163,6 +163,163 @@ Verified over HTTP (curl, port 8123, MySQL `gms` db, `php artisan migrate:fresh 
 
 **Not yet built for these:** renewal-payment path for existing members (see design note above), Invoice/receipt generation (no PDF — a manual bKash/Nagad payment doesn't need one), admin dashboard summary/stats endpoints, Resource/transformer classes, rate-limiting on the public payment-submission endpoint (currently open to anyone who knows a registration id).
 
+## ✅ Implemented — Attendance (member check-in/check-out)
+
+- `database/migrations/2026_07_20_000001_create_attendances_table.php` — `member_id` (FK→members, cascadeOnDelete), `branch_id` (FK→branches, nullable, nullOnDelete), `date`, `check_in`, `check_out` (nullable)
+- `app/Models/Attendance.php` — `belongsTo(Member)`, `belongsTo(Branch)`
+- `app/Models/Member.php` — added `attendances()` hasMany
+- `app/Http/Requests/Api/Admin/AttendanceRequest.php` — `member_id` required (exists:members), `branch_id` nullable (exists:branches) — used only for `checkIn`
+- `app/Http/Controllers/Api/V1/Admin/AttendanceController.php` — `index` (filter by `member_id`/`branch_id`/`date`), `show`, `checkIn` (422 if member already has an open record — `check_out` null), `checkOut` (422 if already checked out)
+- `app/Http/Controllers/Api/V1/User/AttendanceController.php` — `index` (own paginated history), `calendar` (own records filtered by `?year=&month=`, defaults to current month)
+- `routes/api.php` — `admin/attendance*` under the existing `role:admin,staff` group (registrations/payments group — staff manage attendance too); `user/attendance*` (`index`, `/calendar`) under the existing `role:member` group
+
+Design note: no `staff_id` on this table — attendance here is member gym check-in/out only, matching the README ERD (`Members → Attendance`). Staff attendance/leave is a separate concern (`LeaveRequest`, not yet built).
+
+Verified over HTTP (curl, port 8123, MySQL `gms` db) — all passing:
+- `POST /api/v1/admin/attendance/check-in` (`member_id`) → 201, `date`/`check_in` set to now
+- `POST /api/v1/admin/attendance/check-in` again on the same member (still open) → `422` "already checked in"
+- `GET /api/v1/admin/attendance` (admin token) → 200, paginated, `member.user`+`branch` eager-loaded
+- `POST /api/v1/admin/attendance/{id}/check-out` → 200, `check_out` set
+- `POST .../check-out` again → `422` "already checked out"
+- `GET /api/v1/user/attendance` (member token) → 200, own record only
+- `GET /api/v1/user/attendance/calendar?year=2026&month=7` (member token) → 200, own records for that month
+- No token on `/api/v1/admin/attendance` → `401 {"message":"Unauthenticated."}`
+
+**Not yet built for this:** Resource/transformer classes, branch-level attendance reports (`/reports/attendance`), auto checkout (e.g. end-of-day cron for members who forgot to check out).
+
+## ✅ Implemented — LeadInquiry (public inquiry form)
+
+- `database/migrations/2026_07_20_000002_create_lead_inquiries_table.php` — name, email, phone, `membership_plan_id` (FK→membership_plans, nullable, nullOnDelete), message, status enum(new,contacted,converted,closed) default new, notes
+- `app/Models/LeadInquiry.php` — `belongsTo(MembershipPlan)`
+- `app/Http/Requests/Api/Public/LeadInquiryRequest.php`, `app/Http/Requests/Api/Admin/LeadInquiryRequest.php` (status/notes only, both `sometimes`)
+- `app/Http/Controllers/Api/V1/Public/LeadInquiryController.php` — `store()`, public, no auth
+- `app/Http/Controllers/Api/V1/Admin/LeadInquiryController.php` — `index` (filter by `status`), `show`, `update` (status/notes) — under `role:admin,staff` (staff process inquiries per README RBAC table)
+- `routes/api.php` — `POST /api/v1/inquiries` (public); `admin/inquiries{,/{id}}` under the existing `role:admin,staff` group
+
+Verified over HTTP (curl, port 8123) — all passing:
+- `POST /api/v1/inquiries` (no auth) → 201
+- `GET /api/v1/admin/inquiries` (admin token) → 200, paginated
+- `PUT /api/v1/admin/inquiries/{id}` (`status: contacted`, `notes`) → 200, updated
+
+**Not yet built for this:** Resource/transformer classes, assigning an inquiry to a specific staff member, auto-conversion into a `MemberRegistration` when marked `converted`.
+
+## ✅ Implemented — Coupon/Discount (applied at manual-payment submission)
+
+- `database/migrations/2026_07_20_000003_create_coupons_table.php` — code (unique), type enum(percentage,fixed), discount, min_order (nullable), max_uses (nullable = unlimited), used_count (default 0), expires_at (nullable), status enum(active,inactive)
+- `database/migrations/2026_07_20_000004_create_discounts_table.php` — usage audit: `coupon_id` (FK cascadeOnDelete), `member_registration_id` (FK cascadeOnDelete — same registration-first pattern as `payments`), `payment_id` (FK nullable, nullOnDelete), amount (the discount actually applied), used_at
+- `database/migrations/2026_07_20_000005_add_coupon_fields_to_payments_table.php` — adds nullable `coupon_id` (FK, nullOnDelete) + nullable `discount_amount` to the existing `payments` table
+- `app/Models/Coupon.php` — `hasMany(Discount)`; `Coupon::findValidForAmount(code, amount)` static (throws `ValidationException` if missing/inactive/expired/max-uses-reached/below-min_order) + `calculateDiscount(amount)` instance method (percentage or fixed, capped at the amount itself)
+- `app/Models/Discount.php` — `belongsTo(Coupon, MemberRegistration, Payment)`
+- `app/Models/Payment.php` — added `coupon_id`/`discount_amount` to fillable+casts, added `coupon()` belongsTo
+- `app/Http/Requests/Api/Admin/CouponRequest.php` — `code` unique (ignores self on update via route-bound `{coupon}`), `type`/`discount` required on POST only (same `isMethod('post')` pattern as `PlanRequest`)
+- `app/Http/Controllers/Api/V1/Admin/CouponController.php` — full CRUD (config-style resource, like `PlanController`)
+- `app/Http/Controllers/Api/V1/Admin/DiscountController.php` — `index` (filter by `coupon_id`), read-only usage log
+- `app/Http/Controllers/Api/V1/Public/CouponController.php` — `validateCode()`, `GET /coupons/validate?code=&membership_plan_id=`, public — lets the frontend show the discounted price before submitting payment
+- `app/Http/Requests/Api/Public/PaymentRequest.php` — added optional `coupon_code`
+- `app/Http/Controllers/Api/V1/Public/PaymentController.php` — `store()` now: if `coupon_code` present, validates it against the plan price, records `coupon_id`+`discount_amount` on the `Payment`, creates a `Discount` row, and increments `coupon.used_count` — all inside the existing DB transaction; an invalid/expired/exhausted coupon throws `ValidationException` (422) before any row is written
+- `routes/api.php` — `GET /api/v1/coupons/validate` (public); `admin/coupons` apiResource + `GET /admin/discounts` under `role:admin`
+
+Design note: `amount` on `payments` stays self-reported (member's manual bKash/Nagad transfer, no gateway) — the coupon doesn't force `amount` to match `final_price`, it just records what discount *should* apply so admin can cross-check during approval. Deleting a `Coupon` cascades to delete its `Discount` audit rows (same cascade convention used elsewhere in this schema), but the `Payment.discount_amount` itself survives since `payments.coupon_id` is `nullOnDelete`.
+
+Verified over HTTP (curl, port 8123, MySQL `gms` db) — all passing:
+- `POST /api/v1/admin/coupons` (`WELCOME20`, 20% percentage, `max_uses: 5`) → 201
+- `GET /api/v1/coupons/validate?code=WELCOME20&membership_plan_id=1` (no auth) → 200, `discount_amount: 300`, `final_price: 1200` (on a 1500 plan)
+- `GET /api/v1/coupons/validate?code=BOGUS...` → 422 "Invalid or inactive coupon code."
+- `POST /api/v1/registrations/{id}/payments` with `coupon_code: WELCOME20` → 201, payment has `coupon_id`+`discount_amount: 300.00`
+- Coupon `used_count` 0→1 after that submission; `GET /api/v1/admin/discounts` → 200, one row linking coupon+registration+payment
+- Submitting a payment with an invalid coupon code → 422, no `Payment`/`Discount` row created (validated before the DB transaction)
+- Duplicate coupon `code` on create → 422 "The code has already been taken."
+- Deactivating a coupon (`status: inactive`) → `GET /coupons/validate` on it → 422 immediately
+
+**Not yet built for this:** Resource/transformer classes, per-member usage cap (currently only a global `max_uses`, so the same member could reuse a coupon across different registrations), coupon application on the renewal-payment path (doesn't exist yet — see the Manual Payment section's design note).
+
+## ✅ Implemented — Diet (plans/meals/member assignment/progress)
+
+- `database/migrations/2026_07_20_000006_create_diet_plans_table.php` — name, description, `duration_in_days`, type enum(weight_loss,muscle_gain,maintenance,general), calories, status enum(active,inactive)
+- `database/migrations/2026_07_20_000007_create_diet_meals_table.php` — `diet_plan_id` FK cascadeOnDelete, meal_type enum(breakfast,lunch,dinner,snack), name, calories, protein/carbs/fats
+- `database/migrations/2026_07_20_000008_create_member_diets_table.php` — `member_id`/`diet_plan_id` FK cascadeOnDelete, start_date, end_date, status enum(active,completed,cancelled)
+- `database/migrations/2026_07_20_000009_create_diet_progress_table.php` — `member_diet_id` FK cascadeOnDelete, weight, date, notes
+- `app/Models/{DietPlan,DietMeal,MemberDiet,DietProgress}.php` — `DietPlan` hasMany(meals, memberDiets); `MemberDiet` belongsTo(Member, DietPlan) + hasMany(progress); `DietProgress` belongsTo(MemberDiet)
+- `app/Models/Member.php` — added `memberDiets()` hasMany
+- `app/Http/Requests/Api/Admin/{DietPlanRequest,DietMealRequest,MemberDietRequest}.php`, `app/Http/Requests/Api/User/DietProgressRequest.php`
+- `app/Http/Controllers/Api/V1/Admin/DietPlanController.php` — full CRUD + `meals()`/`addMeal()`/`removeMeal()` (nested under a plan)
+- `app/Http/Controllers/Api/V1/Admin/MemberDietController.php` — `index` (filter `member_id`/`status`), `assign` (store)
+- `app/Http/Controllers/Api/V1/Admin/DietProgressController.php` — `index` (filter `member_diet_id`), read-only
+- `app/Http/Controllers/Api/V1/User/DietController.php` — `availablePlans` (active plans), `currentDiet` (own latest active `MemberDiet` + plan + meals, 404 if none), `progress`/`updateProgress` (scoped to own active `MemberDiet`, 422 if none assigned)
+- `routes/api.php` — `admin/diet-plans*` (+ nested meals) + `admin/member-diets` + `admin/diet-progress` under `role:admin`; `user/diet-plans`, `user/my-diet`, `user/diet-progress` under the existing `role:member` group
+
+Verified over HTTP (curl, port 8123) — all passing:
+- `POST /api/v1/admin/diet-plans` → 201; `POST .../diet-plans/{id}/meals` → 201; `GET .../meals` → 200
+- `POST /api/v1/admin/member-diets` (`member_id`, `diet_plan_id`, `start_date`) → 201
+- `GET /api/v1/user/diet-plans` (member token) → 200, active plans only
+- `GET /api/v1/user/my-diet` → 200, own active plan + meals eager-loaded
+- `POST /api/v1/user/diet-progress` (`weight`, `date`) → 201, tied to own active `MemberDiet`
+- `GET /api/v1/user/diet-progress` → 200, own entries only
+
+**Not yet built for this:** Resource/transformer classes, `DietType`/status enums as real Enum classes (currently raw DB enum strings), preventing a member from having two simultaneously-`active` `MemberDiet` rows.
+
+## ✅ Implemented — Workout (member workouts/exercises)
+
+- `database/migrations/2026_07_20_000010_create_exercises_table.php` — name, category enum(cardio,strength,flexibility,balance), muscle_group, equipment_needed, description, video_url
+- `database/migrations/2026_07_20_000011_create_member_workouts_table.php` — `member_id` FK cascadeOnDelete, `trainer_id` FK nullable nullOnDelete, date, duration_minutes, type enum(personal,group,cardio,strength,mixed), intensity enum(low,medium,high), calories_burned, status enum(scheduled,completed,cancelled), notes
+- `database/migrations/2026_07_20_000012_create_workout_exercises_table.php` — `member_workout_id`/`exercise_id` FK cascadeOnDelete, sets, reps, weight
+- `app/Models/{Exercise,MemberWorkout,WorkoutExercise}.php` — `MemberWorkout` belongsTo(Member, Trainer) + hasMany(exercises → `WorkoutExercise`); `WorkoutExercise` belongsTo(MemberWorkout, Exercise)
+- `app/Models/Member.php` — added `memberWorkouts()` hasMany
+- `app/Http/Requests/Api/Admin/{ExerciseRequest,MemberWorkoutRequest}.php` — `MemberWorkoutRequest` accepts an optional nested `exercises[]` array (`exercise_id`, `sets`, `reps`, `weight`)
+- `app/Http/Controllers/Api/V1/Admin/ExerciseController.php` — full CRUD (exercise library, config-style like `PlanController`)
+- `app/Http/Controllers/Api/V1/Admin/MemberWorkoutController.php` — full CRUD; `store`/`update` accept the nested `exercises[]` and write them inside a DB transaction (`update` does delete-all-then-recreate on the pivot rows when `exercises` is present, same pattern as `TrainerController@updateSchedule`)
+- `app/Http/Controllers/Api/V1/User/WorkoutController.php` — `index` (own workouts), `show`, `complete` (422 unless `status=scheduled`; optional `calories_burned`), `exercises` (read-only catalog); all owner-scoped like `User\TrainingSessionController`
+- `routes/api.php` — `admin/exercises` + `admin/member-workouts` apiResources under `role:admin`; `user/my-workouts*` + `user/exercises` under the existing `role:member` group
+
+Verified over HTTP (curl, port 8123) — all passing:
+- `POST /api/v1/admin/exercises` → 201
+- `POST /api/v1/admin/member-workouts` with nested `exercises: [{exercise_id, sets, reps, weight}]` → 201, pivot row created with `exercise` eager-loaded
+- `GET /api/v1/user/my-workouts` (member token) → 200, own workout with exercises
+- `GET /api/v1/user/exercises` → 200, full catalog
+- `POST /api/v1/user/my-workouts/{id}/complete` (`calories_burned`) → 200, `status: completed`
+- `POST .../complete` again → 422 "Only scheduled workouts can be marked complete."
+
+**Not yet built for this:** Resource/transformer classes, trainer-side view of assigned member workouts, calorie-burn auto-estimation (currently admin/member enters it manually).
+
+## ✅ Implemented — HealthInfo (member health record)
+
+- `database/migrations/2026_07_20_000013_create_health_info_table.php` — `member_id` (FK→members, **unique**, cascadeOnDelete — one record per member), height, weight, bmi, blood_type, allergies, conditions, medications, emergency_contact
+- `app/Models/HealthInfo.php` — `belongsTo(Member)`; `static::saving()` hook recomputes `bmi` from `height`/`weight` whenever both are present (`weight_kg / (height_cm/100)^2`), so `bmi` is never client-supplied — always derived
+- `app/Http/Requests/Api/Admin/HealthInfoRequest.php` (`member_id` required, rest nullable), `app/Http/Requests/Api/User/HealthInfoRequest.php` (same fields, no `member_id` — always the caller's own)
+- `app/Http/Controllers/Api/V1/Admin/HealthInfoController.php` — `index` (filter `member_id`), `store` (422 if that member already has a record — one-to-one enforced at the app layer, not just the DB unique constraint), `show`, `update`
+- `app/Http/Controllers/Api/V1/User/HealthController.php` — `show` (own record, 404 if none), `update` (`updateOrCreate` on own `member_id` — member can self-report without admin creating it first)
+- `routes/api.php` — `admin/health-info*` under `role:admin`; `user/health-info` (GET/PUT) under the existing `role:member` group
+
+Verified over HTTP (curl, port 8123) — all passing:
+- `POST /api/v1/admin/health-info` (`member_id`, `height: 175`, `weight: 72.5`) → 201, `bmi: 23.67` auto-computed
+- Duplicate `POST` for the same `member_id` → 422 "already has a health record"
+- `GET /api/v1/user/health-info` (member token) → 200, own record
+- `PUT /api/v1/user/health-info` (`allergies`, `weight: 73`) → 200, `bmi` recomputed to `23.84`
+
+**Not yet built for this:** Resource/transformer classes, historical weight/BMI trend (this table is a single current snapshot, not a time series — that's what `diet_progress` is for on the diet side).
+
+## ✅ Implemented — Review (trainer reviews, moderated)
+
+- `database/migrations/2026_07_20_000014_create_reviews_table.php` — `member_id`/`trainer_id` FK cascadeOnDelete, rating (1-5), comment, status enum(pending,approved,rejected) default pending
+- `app/Models/Review.php` — `belongsTo(Member, Trainer)`
+- `app/Models/Member.php` — added `reviews()` hasMany; `app/Models/Trainer.php` — added `reviews()` hasMany
+- `app/Http/Requests/Api/User/ReviewRequest.php` (`trainer_id`, `rating` 1-5, `comment`), `app/Http/Requests/Api/Admin/ReviewRequest.php` (`status` only — moderation)
+- `app/Http/Controllers/Api/V1/Admin/ReviewController.php` — `index` (filter `status`/`trainer_id`), `update` (approve/reject), `destroy`
+- `app/Http/Controllers/Api/V1/User/ReviewController.php` — `index` (own, `my-reviews`), `store` (always created `pending` — never auto-approved)
+- `app/Http/Controllers/Api/V1/User/TrainerController.php` — added `reviews($trainer)`, returns only `status=approved` reviews for that trainer
+- `routes/api.php` — `admin/reviews` (index/update/destroy) under `role:admin`; `user/my-reviews` + `POST user/reviews` under `role:member`; `user/trainers/{trainer}/reviews` under the existing `role:staff,trainer,member` group
+
+Design note: this is a separate testimonial/moderation system from the numeric rating already on `training_sessions.member_rating` (which drives `trainer.rating_avg`, see the Trainer system section). A `Review` here does **not** touch `rating_avg` — the two rating pathways are intentionally independent (one is a mandatory post-session score, this one is an optional public-facing written review that needs admin approval before showing up on a trainer's profile).
+
+Verified over HTTP (curl, port 8123) — all passing:
+- `POST /api/v1/user/reviews` (`trainer_id`, `rating: 5`, `comment`) → 201, `status: pending`
+- `GET /api/v1/user/trainers/{id}/reviews` while still pending → 200, empty (correctly hidden)
+- `GET /api/v1/admin/reviews` (admin token) → 200, shows the pending review
+- `PUT /api/v1/admin/reviews/{id}` (`status: approved`) → 200
+- `GET /api/v1/user/trainers/{id}/reviews` after approval → 200, review now visible
+
+**Not yet built for this:** Resource/transformer classes, restricting review submission to members who've actually had a completed session with that trainer, a public (no-auth) trainer-reviews endpoint (currently requires `role:staff,trainer,member` login, matching README's placement under `/user`).
+
 ## Not started (see root `README.md` for full planned tree)
 
-Everything else in the original planned structure — LeadInquiry, Attendance, Diet (plans/meals/member assignment/progress), Workout (member workouts/exercises), Coupon/Discount, HealthInfo, Equipment/maintenance, Locker/MemberLocker, Review, LeaveRequest, Expense, plus the supporting Repositories, Services, Enums, Events, Listeners, Jobs, Notifications, Policies, Exceptions, Helpers layers — has no code or files yet. Recreate/add a file only when actually implementing it, following the paths laid out in the root `README.md` structure diagram.
+Everything else in the original planned structure — Equipment/maintenance, Locker/MemberLocker, LeaveRequest, Expense, plus the supporting Repositories, Services, Enums, Events, Listeners, Jobs, Notifications, Policies, Exceptions, Helpers layers — has no code or files yet. Recreate/add a file only when actually implementing it, following the paths laid out in the root `README.md` structure diagram.

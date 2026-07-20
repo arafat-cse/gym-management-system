@@ -15,6 +15,7 @@ class PaymentRequest extends FormRequest
     {
         return [
             'membership_plan_id' => ['required', 'exists:membership_plans,id'],
+            'coupon_code' => ['nullable', 'string'],
             'method' => ['required', 'in:bkash,nagad'],
             'sender_number' => ['required', 'string', 'max:30'],
             'transaction_id' => ['required', 'string', 'max:255', 'unique:payments,transaction_id'],
