@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('member_lockers', function (Blueprint $table) {
             $table->id();
             $table->foreignId('member_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('locker_id')->unique()->constrained()->cascadeOnDelete();
+            $table->foreignId('locker_id')->constrained()->cascadeOnDelete();
             $table->dateTime('assigned_at');
             $table->enum('status', ['active', 'released'])->default('active');
             $table->timestamps();

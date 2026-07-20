@@ -7,11 +7,16 @@ use App\Http\Controllers\Api\V1\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\Api\V1\Admin\DietPlanController as AdminDietPlanController;
 use App\Http\Controllers\Api\V1\Admin\DietProgressController as AdminDietProgressController;
 use App\Http\Controllers\Api\V1\Admin\DiscountController as AdminDiscountController;
+use App\Http\Controllers\Api\V1\Admin\EquipmentController as AdminEquipmentController;
 use App\Http\Controllers\Api\V1\Admin\ExerciseController as AdminExerciseController;
+use App\Http\Controllers\Api\V1\Admin\ExpenseController as AdminExpenseController;
 use App\Http\Controllers\Api\V1\Admin\HealthInfoController as AdminHealthInfoController;
 use App\Http\Controllers\Api\V1\Admin\LeadInquiryController as AdminLeadInquiryController;
+use App\Http\Controllers\Api\V1\Admin\LeaveRequestController as AdminLeaveRequestController;
+use App\Http\Controllers\Api\V1\Admin\LockerController as AdminLockerController;
 use App\Http\Controllers\Api\V1\Admin\MemberController;
 use App\Http\Controllers\Api\V1\Admin\MemberDietController as AdminMemberDietController;
+use App\Http\Controllers\Api\V1\Admin\MemberLockerController as AdminMemberLockerController;
 use App\Http\Controllers\Api\V1\Admin\MemberRegistrationController;
 use App\Http\Controllers\Api\V1\Admin\MemberWorkoutController as AdminMemberWorkoutController;
 use App\Http\Controllers\Api\V1\Admin\PaymentController as AdminPaymentController;
@@ -34,6 +39,8 @@ use App\Http\Controllers\Api\V1\User\AttendanceController as UserAttendanceContr
 use App\Http\Controllers\Api\V1\User\AuthController as UserAuthController;
 use App\Http\Controllers\Api\V1\User\DietController as UserDietController;
 use App\Http\Controllers\Api\V1\User\HealthController as UserHealthController;
+use App\Http\Controllers\Api\V1\User\LeaveRequestController as UserLeaveRequestController;
+use App\Http\Controllers\Api\V1\User\LockerController as UserLockerController;
 use App\Http\Controllers\Api\V1\User\ReviewController as UserReviewController;
 use App\Http\Controllers\Api\V1\User\TrainerController as UserTrainerController;
 use App\Http\Controllers\Api\V1\User\TrainingSessionController as UserTrainingSessionController;
@@ -98,6 +105,21 @@ Route::prefix('v1')->group(function () {
             Route::get('/reviews', [AdminReviewController::class, 'index']);
             Route::put('/reviews/{review}', [AdminReviewController::class, 'update']);
             Route::delete('/reviews/{review}', [AdminReviewController::class, 'destroy']);
+
+            Route::apiResource('equipment', AdminEquipmentController::class);
+            Route::get('/equipment/{equipment}/maintenance', [AdminEquipmentController::class, 'maintenance']);
+            Route::post('/equipment/{equipment}/maintenance', [AdminEquipmentController::class, 'addMaintenance']);
+
+            Route::apiResource('lockers', AdminLockerController::class);
+            Route::get('/member-lockers', [AdminMemberLockerController::class, 'index']);
+            Route::post('/member-lockers', [AdminMemberLockerController::class, 'assign']);
+            Route::post('/member-lockers/{memberLocker}/release', [AdminMemberLockerController::class, 'release']);
+
+            Route::get('/leave-requests', [AdminLeaveRequestController::class, 'index']);
+            Route::get('/leave-requests/{leaveRequest}', [AdminLeaveRequestController::class, 'show']);
+            Route::put('/leave-requests/{leaveRequest}', [AdminLeaveRequestController::class, 'update']);
+
+            Route::apiResource('expenses', AdminExpenseController::class);
         });
 
         Route::middleware(['auth:sanctum', 'role:admin,staff'])->group(function () {
@@ -130,6 +152,9 @@ Route::prefix('v1')->group(function () {
             Route::get('/trainers', [UserTrainerController::class, 'index']);
             Route::get('/trainers/{trainer}', [UserTrainerController::class, 'show']);
             Route::get('/trainers/{trainer}/reviews', [UserTrainerController::class, 'reviews']);
+
+            Route::get('/leave-requests', [UserLeaveRequestController::class, 'index']);
+            Route::post('/leave-requests', [UserLeaveRequestController::class, 'store']);
         });
 
         Route::middleware(['auth:sanctum', 'role:member'])->group(function () {
@@ -157,6 +182,8 @@ Route::prefix('v1')->group(function () {
 
             Route::get('/my-reviews', [UserReviewController::class, 'index']);
             Route::post('/reviews', [UserReviewController::class, 'store']);
+
+            Route::get('/my-locker', [UserLockerController::class, 'show']);
         });
     });
 });

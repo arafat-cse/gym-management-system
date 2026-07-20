@@ -320,6 +320,67 @@ Verified over HTTP (curl, port 8123) — all passing:
 
 **Not yet built for this:** Resource/transformer classes, restricting review submission to members who've actually had a completed session with that trainer, a public (no-auth) trainer-reviews endpoint (currently requires `role:staff,trainer,member` login, matching README's placement under `/user`).
 
-## Not started (see root `README.md` for full planned tree)
+## ✅ Implemented — Equipment (+ maintenance log)
 
-Everything else in the original planned structure — Equipment/maintenance, Locker/MemberLocker, LeaveRequest, Expense, plus the supporting Repositories, Services, Enums, Events, Listeners, Jobs, Notifications, Policies, Exceptions, Helpers layers — has no code or files yet. Recreate/add a file only when actually implementing it, following the paths laid out in the root `README.md` structure diagram.
+- `database/migrations/2026_07_20_000015_create_equipment_table.php` — name, type, `branch_id` (FK nullable, nullOnDelete), status enum(operational,maintenance,out_of_service), purchase_date, cost
+- `database/migrations/2026_07_20_000016_create_equipment_maintenance_table.php` — `equipment_id` FK cascadeOnDelete, date, cost, technician, notes
+- `app/Models/Equipment.php` — `belongsTo(Branch)` + `hasMany(maintenanceRecords)`; `app/Models/EquipmentMaintenance.php` — `belongsTo(Equipment)`
+- `app/Http/Requests/Api/Admin/{EquipmentRequest,EquipmentMaintenanceRequest}.php`
+- `app/Http/Controllers/Api/V1/Admin/EquipmentController.php` — full CRUD + `maintenance()`/`addMaintenance()` (adding a record also flips the equipment's `status` to `maintenance` — admin sets it back to `operational` manually via a normal `update()` once fixed)
+- `routes/api.php` — `admin/equipment*` (+ nested maintenance) under `role:admin`
+
+Verified over HTTP (curl, port 8123): `POST /api/v1/admin/equipment` → 201; `POST .../equipment/{id}/maintenance` → 201, and the equipment's `status` flipped to `maintenance` automatically.
+
+**Not yet built for this:** Resource/transformer classes, a maintenance-due reminder job.
+
+## ✅ Implemented — Locker / MemberLocker (assignment lifecycle)
+
+- `database/migrations/2026_07_20_000017_create_lockers_table.php` — `branch_id` (FK nullable, nullOnDelete), number, size enum(small,medium,large), status enum(available,occupied,maintenance)
+- `database/migrations/2026_07_20_000018_create_member_lockers_table.php` — `member_id`/`locker_id` FK cascadeOnDelete, assigned_at, status enum(active,released)
+- `database/migrations/2026_07_20_000021_drop_unique_locker_id_from_member_lockers_table.php` — **bug fix found during testing**: `locker_id` was originally created `unique()` (meant to enforce "one current assignment per locker"), but since `release()` keeps the old row instead of deleting it, that unique constraint permanently blocked re-assigning a released locker to anyone (`500` SQL integrity error, confirmed by testing the exact reassign flow). Fixed by dropping the unique constraint (replaced with a plain index) and moving to the original `2026_07_20_000018` migration too (so a fresh `migrate:fresh` never recreates the bug); "only one active assignment per locker" is now enforced purely at the app layer via the `locker.status !== 'available'` check in `assign()`
+- `app/Models/Locker.php` — `belongsTo(Branch)` + `hasOne(memberLocker)`; `app/Models/MemberLocker.php` — `belongsTo(Member, Locker)`
+- `app/Models/Member.php` — added `memberLocker()` hasOne
+- `app/Http/Requests/Api/Admin/{LockerRequest,MemberLockerRequest}.php`
+- `app/Http/Controllers/Api/V1/Admin/LockerController.php` — full CRUD
+- `app/Http/Controllers/Api/V1/Admin/MemberLockerController.php` — `index` (active assignments only), `assign` (422 if locker not `available`; flips locker to `occupied` in a DB transaction), `release` (422 if already released; flips locker back to `available`)
+- `app/Http/Controllers/Api/V1/User/LockerController.php` — `show`, own active locker assignment (404 if none)
+- `routes/api.php` — `admin/lockers` apiResource + `admin/member-lockers` (index/assign/release) under `role:admin`; `user/my-locker` under `role:member`
+
+Verified over HTTP (curl, port 8123) — all passing, including the bug found and fixed mid-testing:
+- `POST /api/v1/admin/lockers` → 201; `POST /api/v1/admin/member-lockers` → 201, locker flips to `occupied`
+- Assigning the same (occupied) locker again → 422
+- `GET /api/v1/user/my-locker` (member token) → 200, own assignment
+- `POST /api/v1/admin/member-lockers/{id}/release` → 200, locker flips back to `available`
+- Re-assigning that same released locker → **initially 500** (unique constraint violation) → fixed → now 201, new `MemberLocker` row created, old one preserved as history
+
+**Not yet built for this:** Resource/transformer classes, a member-facing "request a locker" self-service flow (currently admin-only assignment).
+
+## ✅ Implemented — LeaveRequest (staff leave)
+
+- `database/migrations/2026_07_20_000019_create_leave_requests_table.php` — `staff_id` FK cascadeOnDelete, leave_type enum(sick,casual,annual,other), start_date, end_date, reason, status enum(pending,approved,rejected), `approved_by` FK nullable nullOnDelete
+- `app/Models/LeaveRequest.php` — `belongsTo(Staff, User as approvedBy)`
+- `app/Models/Staff.php` — added `leaveRequests()` hasMany
+- `app/Http/Requests/Api/Admin/LeaveRequestRequest.php` (`status` only), `app/Http/Requests/Api/User/LeaveRequestRequest.php` (`leave_type`, `start_date` ≥ today, `end_date` ≥ `start_date`, `reason`)
+- `app/Http/Controllers/Api/V1/Admin/LeaveRequestController.php` — `index` (filter `status`/`staff_id`), `show`, `update` (sets `status` + `approved_by` = the acting admin)
+- `app/Http/Controllers/Api/V1/User/LeaveRequestController.php` — `index` (own), `store` (own, always `pending`) — staff self-service; not in README's explicit endpoint list but required for the admin approval flow to have a source, added under the existing `role:staff,trainer,member` login group since staff authenticate via `/user/login` in this codebase
+- `routes/api.php` — `admin/leave-requests*` under `role:admin`; `user/leave-requests` (index/store) under the existing `role:staff,trainer,member` group
+
+Verified over HTTP (curl, port 8123): staff `POST /api/v1/user/leave-requests` → 201 `pending`; staff `GET /api/v1/user/leave-requests` → 200, own only; admin `GET /api/v1/admin/leave-requests` → 200; admin `PUT .../leave-requests/{id}` (`status: approved`) → 200, `approved_by` set to the admin's user id.
+
+**Not yet built for this:** Resource/transformer classes, restricting a staff member to only `index`/`store` their own requests being enforced anywhere but the controller (no Policy class).
+
+## ✅ Implemented — Expense (branch expense tracking)
+
+- `database/migrations/2026_07_20_000020_create_expenses_table.php` — `branch_id` (FK nullable, nullOnDelete), category enum(rent,utilities,salary,equipment,maintenance,marketing,other), amount, date, description, `approved_by` FK nullable nullOnDelete
+- `app/Models/Expense.php` — `belongsTo(Branch, User as approvedBy)`
+- `app/Http/Requests/Api/Admin/ExpenseRequest.php`
+- `app/Http/Controllers/Api/V1/Admin/ExpenseController.php` — full CRUD (filter `branch_id`/`category` on `index`); `store` stamps `approved_by` with the acting admin's user id (expenses are admin-entered, so "approved" = "recorded by")
+- `routes/api.php` — `admin/expenses` apiResource under `role:admin`
+
+Verified over HTTP (curl, port 8123): `POST /api/v1/admin/expenses` → 201; `GET ?category=utilities` → 200, filtered; `PUT` → 200; `DELETE` → 204.
+
+**Not yet built for this:** Resource/transformer classes, revenue/expense summary reports (`/reports/revenue` — ties both `Payment` and `Expense` together, not built for either module yet).
+
+## Backend API — planned tree fully implemented
+
+All 16 domains from the original planned structure now have real code (Auth/RBAC, Branches/Members/Staff, Public registration, MembershipPlan/Subscription, Trainer system, Manual Payment, Attendance, LeadInquiry, Coupon/Discount, Diet, Workout, HealthInfo, Review, Equipment, Locker, LeaveRequest, Expense). Still genuinely missing across the board (not domain-specific, cross-cutting): Resource/transformer classes (raw model JSON everywhere instead), the Repositories/Services/Enums-as-classes/Events/Listeners/Jobs/Notifications/Policies/Exceptions/Helpers layers from the README's aspirational structure (this codebase does the equivalent logic directly in controllers/models instead), report endpoints (`/reports/revenue`, `/reports/attendance`, `/reports/trainer-performance`), and scheduled jobs (subscription expiry, maintenance reminders). See each section above for what's specifically left for that domain.
