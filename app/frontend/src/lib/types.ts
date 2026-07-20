@@ -21,6 +21,7 @@ export type UserProfile = {
   last_name: string;
   name: string;
   email: string;
+  phone: string | null;
   gender: "male" | "female" | "other" | null;
   blood_group: string | null;
   religion: string | null;
@@ -171,4 +172,220 @@ export type Subscription = {
   notes: string | null;
   member: Member;
   membership_plan: MembershipPlan;
+};
+
+export type Attendance = {
+  id: number;
+  member_id: number;
+  branch_id: number | null;
+  date: string;
+  check_in: string;
+  check_out: string | null;
+  member: Member;
+  branch: Branch | null;
+};
+
+export type LeadInquiry = {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  membership_plan_id: number | null;
+  message: string | null;
+  status: "new" | "contacted" | "converted" | "closed";
+  notes: string | null;
+  created_at: string;
+  membership_plan: MembershipPlan | null;
+};
+
+export type Coupon = {
+  id: number;
+  code: string;
+  type: "percentage" | "fixed";
+  discount: string;
+  min_order: string | null;
+  max_uses: number | null;
+  used_count: number;
+  expires_at: string | null;
+  status: "active" | "inactive";
+};
+
+export type Discount = {
+  id: number;
+  coupon_id: number;
+  member_registration_id: number;
+  payment_id: number | null;
+  amount: string;
+  used_at: string;
+  coupon: Coupon;
+  member_registration: MemberRegistration;
+};
+
+export type DietMeal = {
+  id: number;
+  diet_plan_id: number;
+  meal_type: "breakfast" | "lunch" | "dinner" | "snack";
+  name: string;
+  calories: number | null;
+  protein: string | null;
+  carbs: string | null;
+  fats: string | null;
+};
+
+export type DietPlan = {
+  id: number;
+  name: string;
+  description: string | null;
+  duration_in_days: number;
+  type: "weight_loss" | "muscle_gain" | "maintenance" | "general";
+  calories: number | null;
+  status: "active" | "inactive";
+  meals?: DietMeal[];
+  meals_count?: number;
+};
+
+export type MemberDiet = {
+  id: number;
+  member_id: number;
+  diet_plan_id: number;
+  start_date: string;
+  end_date: string | null;
+  status: "active" | "completed" | "cancelled";
+  member: Member;
+  diet_plan: DietPlan;
+};
+
+export type DietProgress = {
+  id: number;
+  member_diet_id: number;
+  weight: string;
+  date: string;
+  notes: string | null;
+  member_diet: MemberDiet;
+};
+
+export type Exercise = {
+  id: number;
+  name: string;
+  category: "cardio" | "strength" | "flexibility" | "balance";
+  muscle_group: string | null;
+  equipment_needed: string | null;
+  description: string | null;
+  video_url: string | null;
+};
+
+export type WorkoutExercise = {
+  id: number;
+  member_workout_id: number;
+  exercise_id: number;
+  sets: number | null;
+  reps: number | null;
+  weight: string | null;
+  exercise: Exercise;
+};
+
+export type MemberWorkout = {
+  id: number;
+  member_id: number;
+  trainer_id: number | null;
+  date: string;
+  duration_minutes: number | null;
+  type: "personal" | "group" | "cardio" | "strength" | "mixed";
+  intensity: "low" | "medium" | "high";
+  calories_burned: number | null;
+  status: "scheduled" | "completed" | "cancelled";
+  notes: string | null;
+  member: Member;
+  trainer: Trainer | null;
+  exercises: WorkoutExercise[];
+};
+
+export type HealthInfo = {
+  id: number;
+  member_id: number;
+  height: string | null;
+  weight: string | null;
+  bmi: string | null;
+  blood_type: string | null;
+  allergies: string | null;
+  conditions: string | null;
+  medications: string | null;
+  emergency_contact: string | null;
+  member: Member;
+};
+
+export type Review = {
+  id: number;
+  member_id: number;
+  trainer_id: number;
+  rating: number;
+  comment: string | null;
+  status: "pending" | "approved" | "rejected";
+  created_at: string;
+  member: Member;
+  trainer: Trainer;
+};
+
+export type Equipment = {
+  id: number;
+  name: string;
+  type: string | null;
+  branch_id: number | null;
+  status: "operational" | "maintenance" | "out_of_service";
+  purchase_date: string | null;
+  cost: string | null;
+  branch: Branch | null;
+  maintenance_records?: EquipmentMaintenance[];
+};
+
+export type EquipmentMaintenance = {
+  id: number;
+  equipment_id: number;
+  date: string;
+  cost: string | null;
+  technician: string | null;
+  notes: string | null;
+};
+
+export type Locker = {
+  id: number;
+  branch_id: number | null;
+  number: string;
+  size: "small" | "medium" | "large";
+  status: "available" | "occupied" | "maintenance";
+  branch: Branch | null;
+  member_locker?: MemberLocker | null;
+};
+
+export type MemberLocker = {
+  id: number;
+  member_id: number;
+  locker_id: number;
+  assigned_at: string;
+  status: "active" | "released";
+  member: Member;
+  locker: Locker;
+};
+
+export type LeaveRequest = {
+  id: number;
+  staff_id: number;
+  leave_type: "sick" | "casual" | "annual" | "other";
+  start_date: string;
+  end_date: string;
+  reason: string | null;
+  status: "pending" | "approved" | "rejected";
+  approved_by: number | null;
+  staff: Staff;
+};
+
+export type Expense = {
+  id: number;
+  branch_id: number | null;
+  category: "rent" | "utilities" | "salary" | "equipment" | "maintenance" | "marketing" | "other";
+  amount: string;
+  date: string;
+  description: string | null;
+  approved_by: number | null;
+  branch: Branch | null;
 };
