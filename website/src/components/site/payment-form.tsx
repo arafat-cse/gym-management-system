@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
-import type { MembershipPlan, PaymentNumber } from "@/lib/types";
+import type { CouponValidation, MembershipPlan, PaymentNumber } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,9 +38,40 @@ export function PaymentForm({
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
+  const [couponResult, setCouponResult] = useState<CouponValidation | null>(null);
+  const [couponError, setCouponError] = useState("");
 
   const selectedPlan = plans.find((p) => String(p.id) === planId);
   const numbersForMethod = paymentNumbers.filter((n) => n.method === method);
+  const amountDue = couponResult ? couponResult.final_price : Number(selectedPlan?.price ?? 0);
+
+  async function handleApplyCoupon() {
+    if (!couponCode || !planId) return;
+    setApplyingCoupon(true);
+    setCouponError("");
+    try {
+      const res = await fetch(
+        `/api/coupons/validate?code=${encodeURIComponent(couponCode)}&membership_plan_id=${planId}`
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        setCouponResult(null);
+        setCouponError(data.message ?? "Invalid coupon code.");
+        return;
+      }
+      setCouponResult(data);
+    } finally {
+      setApplyingCoupon(false);
+    }
+  }
+
+  function clearCoupon() {
+    setCouponCode("");
+    setCouponResult(null);
+    setCouponError("");
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -52,7 +83,8 @@ export function PaymentForm({
       formData.append("method", method);
       formData.append("sender_number", senderNumber);
       formData.append("transaction_id", transactionId);
-      formData.append("amount", selectedPlan?.price ?? "0");
+      formData.append("amount", String(amountDue));
+      if (couponResult) formData.append("coupon_code", couponResult.coupon.code);
       if (screenshot) formData.append("screenshot", screenshot);
 
       const res = await fetch(`/api/registrations/${registrationId}/payments`, {
@@ -88,7 +120,13 @@ export function PaymentForm({
         <form onSubmit={handleSubmit} className="grid gap-4">
           <div className="grid gap-2">
             <Label className="text-xs font-semibold text-muted-foreground">Select Plan</Label>
-            <Select value={planId} onValueChange={setPlanId}>
+            <Select
+              value={planId}
+              onValueChange={(v) => {
+                setPlanId(v);
+                clearCoupon();
+              }}
+            >
               <SelectTrigger className="bg-background border-border/60">
                 <SelectValue placeholder="Choose a plan" />
               </SelectTrigger>
@@ -103,6 +141,43 @@ export function PaymentForm({
             {fieldError("membership_plan_id") && (
               <p className="text-xs text-destructive">{fieldError("membership_plan_id")}</p>
             )}
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="coupon_code" className="text-xs font-semibold text-muted-foreground">
+              Coupon Code (optional)
+            </Label>
+            {couponResult ? (
+              <div className="flex items-center justify-between rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm">
+                <span className="text-foreground">
+                  <span className="font-mono font-bold">{couponResult.coupon.code}</span> applied — save
+                  ৳{couponResult.discount_amount}
+                </span>
+                <Button type="button" variant="ghost" size="sm" onClick={clearCoupon}>
+                  Remove
+                </Button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Input
+                  id="coupon_code"
+                  value={couponCode}
+                  placeholder="e.g. WELCOME20"
+                  className="bg-background border-border/60"
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={!couponCode || !planId || applyingCoupon}
+                  onClick={handleApplyCoupon}
+                >
+                  {applyingCoupon && <Loader2 className="animate-spin size-4" />}
+                  Apply
+                </Button>
+              </div>
+            )}
+            {couponError && <p className="text-xs text-destructive">{couponError}</p>}
           </div>
 
           <div className="grid gap-2">
@@ -123,7 +198,9 @@ export function PaymentForm({
 
           {numbersForMethod.length > 0 ? (
             <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm">
-              <p className="font-semibold text-foreground mb-1">Send ৳{selectedPlan ? Number(selectedPlan.price).toFixed(0) : "—"} to:</p>
+              <p className="font-semibold text-foreground mb-1">
+                Send ৳{selectedPlan ? amountDue.toFixed(0) : "—"} to:
+              </p>
               {numbersForMethod.map((n) => (
                 <p key={n.id} className="text-muted-foreground">
                   <span className="font-mono font-bold text-foreground">{n.number}</span>

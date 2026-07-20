@@ -42,6 +42,13 @@ export type Member = {
   branch: Branch | null;
 };
 
+export type AuthUser = UserProfile & {
+  role: "member" | "staff" | "trainer";
+  member?: Omit<Member, "user"> | null;
+  staff?: Omit<Staff, "user"> | null;
+  trainer?: (Omit<Trainer, "user"> & { specializations?: TrainerSpecialization[]; schedules?: TrainerSchedule[] }) | null;
+};
+
 export type Staff = {
   id: number;
   user_id: number;
@@ -79,6 +86,8 @@ export type Trainer = {
   join_date: string | null;
   user: UserProfile;
   branch: Branch | null;
+  specializations?: TrainerSpecialization[];
+  schedules?: TrainerSchedule[];
 };
 
 export type TrainerSchedule = {

@@ -41,8 +41,12 @@ use App\Http\Controllers\Api\V1\User\DietController as UserDietController;
 use App\Http\Controllers\Api\V1\User\HealthController as UserHealthController;
 use App\Http\Controllers\Api\V1\User\LeaveRequestController as UserLeaveRequestController;
 use App\Http\Controllers\Api\V1\User\LockerController as UserLockerController;
+use App\Http\Controllers\Api\V1\User\PaymentController as UserPaymentController;
+use App\Http\Controllers\Api\V1\User\ProfileController as UserProfileController;
 use App\Http\Controllers\Api\V1\User\ReviewController as UserReviewController;
+use App\Http\Controllers\Api\V1\User\SubscriptionController as UserSubscriptionController;
 use App\Http\Controllers\Api\V1\User\TrainerController as UserTrainerController;
+use App\Http\Controllers\Api\V1\User\TrainerSelfController;
 use App\Http\Controllers\Api\V1\User\TrainingSessionController as UserTrainingSessionController;
 use App\Http\Controllers\Api\V1\User\WorkoutController as UserWorkoutController;
 use Illuminate\Support\Facades\Route;
@@ -155,6 +159,20 @@ Route::prefix('v1')->group(function () {
 
             Route::get('/leave-requests', [UserLeaveRequestController::class, 'index']);
             Route::post('/leave-requests', [UserLeaveRequestController::class, 'store']);
+
+            Route::get('/profile', [UserProfileController::class, 'show']);
+            Route::put('/profile', [UserProfileController::class, 'update']);
+        });
+
+        Route::middleware(['auth:sanctum', 'role:trainer'])->group(function () {
+            Route::get('/my-schedule', [TrainerSelfController::class, 'schedule']);
+            Route::put('/my-schedule', [TrainerSelfController::class, 'updateSchedule']);
+            Route::get('/my-training-sessions', [TrainerSelfController::class, 'sessions']);
+            Route::put('/my-training-sessions/{trainingSession}', [TrainerSelfController::class, 'updateSession']);
+            Route::get('/my-specializations', [TrainerSelfController::class, 'specializations']);
+            Route::post('/my-specializations', [TrainerSelfController::class, 'addSpecialization']);
+            Route::delete('/my-specializations/{specialization}', [TrainerSelfController::class, 'removeSpecialization']);
+            Route::get('/received-reviews', [TrainerSelfController::class, 'receivedReviews']);
         });
 
         Route::middleware(['auth:sanctum', 'role:member'])->group(function () {
@@ -184,6 +202,12 @@ Route::prefix('v1')->group(function () {
             Route::post('/reviews', [UserReviewController::class, 'store']);
 
             Route::get('/my-locker', [UserLockerController::class, 'show']);
+
+            Route::get('/subscription', [UserSubscriptionController::class, 'current']);
+            Route::get('/subscription/history', [UserSubscriptionController::class, 'history']);
+
+            Route::get('/payments', [UserPaymentController::class, 'index']);
+            Route::get('/payments/{payment}', [UserPaymentController::class, 'show']);
         });
     });
 });

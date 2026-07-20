@@ -381,6 +381,27 @@ Verified over HTTP (curl, port 8123): `POST /api/v1/admin/expenses` → 201; `GE
 
 **Not yet built for this:** Resource/transformer classes, revenue/expense summary reports (`/reports/revenue` — ties both `Payment` and `Expense` together, not built for either module yet).
 
+## ✅ Implemented — User self-service (Profile, Subscription, Payment history, Trainer self-service)
+
+Discovered while building the frontend user portal: the `/user/*` API surface had role-gated feature endpoints (attendance, diet, workouts, etc.) but **no way for a logged-in staff/trainer/member to see their own profile, and no way for a trainer to manage their own schedule/sessions/specializations** — those existed only on the admin side. Added the missing self-service layer:
+
+- `app/Http/Requests/Api/User/ProfileRequest.php` — first_name/last_name (sometimes), phone, password (nullable min:8), gender/blood_group/religion/nid_number/birth_certificate_number/emergency_contact_number/date_of_birth, `address` (member-only)
+- `app/Http/Controllers/Api/V1/User/ProfileController.php` — `show()`/`update()` for the logged-in user, works for all three roles; loads `member.branch` / `staff.branch` / `trainer.branch+specializations+schedules` depending on `role`; `update()` also patches `member.address` when the caller is a member
+- `app/Http/Controllers/Api/V1/User/SubscriptionController.php` — `current()` (latest subscription, 404 if none), `history()` (paginated) — member-only
+- `app/Http/Controllers/Api/V1/User/PaymentController.php` — `index()`/`show()`, own payment history — queried via `Payment::whereHas('memberRegistration', fn($q) => $q->where('member_id', ...))` since `payments` FKs to `member_registrations`, not `members`, directly (same registration-first design noted in the Manual Payment section)
+- `app/Http/Controllers/Api/V1/User/TrainerSelfController.php` — trainer-only, mirrors what `Admin\TrainerController` can do to a trainer but scoped to `$request->user()->trainer`: `schedule()`/`updateSchedule()` (reuses `Admin\TrainerScheduleRequest`), `sessions()`/`updateSession()` (confirm/complete/cancel own sessions, increments `total_sessions` on completion same as the admin path), `specializations()`/`addSpecialization()`/`removeSpecialization()` (reuses `Admin\TrainerSpecializationRequest`), `receivedReviews()` (all reviews about this trainer, any status — a trainer sees pending ones too since it's about them)
+- `routes/api.php` — `user/profile` (GET/PUT) under the existing `role:staff,trainer,member` group; new `role:trainer`-only group for `my-schedule`, `my-training-sessions{,/{id}}`, `my-specializations{,/{id}}`, `received-reviews`; `user/subscription{,/history}` + `user/payments{,/{id}}` under the existing `role:member` group
+
+Design note: `received-reviews` (not `my-reviews`, which is already taken by the member's own submitted-reviews endpoint) to avoid a route/path collision on the same `/user/*` prefix.
+
+Verified over HTTP (curl, port 8001) — all passing:
+- Member: `GET/PUT /api/v1/user/profile` → 200, member's `address` updatable via the same call; `GET /api/v1/user/subscription` → 200, latest subscription; `/subscription/history` → 200; `GET /api/v1/user/payments` → 200, only this member's payments (via the registration link)
+- Trainer: `PUT /api/v1/user/my-schedule` → 200, replaces own schedule; `POST /api/v1/user/my-specializations` → 201; a member's booked session shows up in `GET /api/v1/user/my-training-sessions`; `PUT /api/v1/user/my-training-sessions/{id}` (`status: confirmed` then `completed`) → 200, `trainer.total_sessions` incremented 0→1; `GET /api/v1/user/received-reviews` → 200, shows a review submitted about this trainer
+- Staff: `GET /api/v1/user/profile` → 200, own `staff` sub-profile
+- Cross-role guard: member token hitting `/api/v1/user/my-schedule` (trainer-only route) → `403 {"message":"Forbidden"}`
+
+**Not yet built for this:** Resource/transformer classes, trainer self-editing `bio`/rates (kept admin-only by design — pricing shouldn't be self-service), a policy layer formalizing the ownership checks (currently inline `abort_if` in each controller, same pattern as the rest of this codebase).
+
 ## Backend API — planned tree fully implemented
 
 All 16 domains from the original planned structure now have real code (Auth/RBAC, Branches/Members/Staff, Public registration, MembershipPlan/Subscription, Trainer system, Manual Payment, Attendance, LeadInquiry, Coupon/Discount, Diet, Workout, HealthInfo, Review, Equipment, Locker, LeaveRequest, Expense). Still genuinely missing across the board (not domain-specific, cross-cutting): Resource/transformer classes (raw model JSON everywhere instead), the Repositories/Services/Enums-as-classes/Events/Listeners/Jobs/Notifications/Policies/Exceptions/Helpers layers from the README's aspirational structure (this codebase does the equivalent logic directly in controllers/models instead), report endpoints (`/reports/revenue`, `/reports/attendance`, `/reports/trainer-performance`), and scheduled jobs (subscription expiry, maintenance reminders). See each section above for what's specifically left for that domain.

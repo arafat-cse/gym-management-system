@@ -37,6 +37,20 @@ export type PaymentNumber = {
   label: string | null;
 };
 
+export type Coupon = {
+  id: number;
+  code: string;
+  type: "percentage" | "fixed";
+  discount: string;
+};
+
+export type CouponValidation = {
+  coupon: Coupon;
+  plan_price: string;
+  discount_amount: number;
+  final_price: number;
+};
+
 export type Trainer = {
   id: number;
   specialization: string | null;
