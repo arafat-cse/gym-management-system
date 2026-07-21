@@ -68,28 +68,59 @@ class MemberRegistration extends Model
     public function approveIntoMember(int $approvedByUserId): Member
     {
         return DB::transaction(function () use ($approvedByUserId) {
-            $user = User::create([
-                'first_name' => $this->first_name,
-                'last_name' => $this->last_name,
-                'email' => $this->email,
-                'phone' => $this->phone,
-                'password' => $this->password,
-                'role' => 'member',
-                'gender' => $this->gender,
-                'blood_group' => $this->blood_group,
-                'religion' => $this->religion,
-                'nid_number' => $this->nid_number,
-                'birth_certificate_number' => $this->birth_certificate_number,
-                'emergency_contact_number' => $this->emergency_contact_number,
-                'date_of_birth' => $this->date_of_birth,
-                'joining_date' => $this->joining_date,
-            ]);
+            // Check if user already exists from previous approval
+            $user = User::where('email', $this->email)->first();
 
-            $member = Member::create([
-                'user_id' => $user->id,
-                'branch_id' => $this->branch_id,
-                'address' => $this->address,
-            ]);
+            if (!$user) {
+                $user = User::create([
+                    'first_name' => $this->first_name,
+                    'last_name' => $this->last_name,
+                    'email' => $this->email,
+                    'phone' => $this->phone,
+                    'password' => $this->password,
+                    'role' => 'member',
+                    'gender' => $this->gender,
+                    'blood_group' => $this->blood_group,
+                    'religion' => $this->religion,
+                    'nid_number' => $this->nid_number,
+                    'birth_certificate_number' => $this->birth_certificate_number,
+                    'emergency_contact_number' => $this->emergency_contact_number,
+                    'date_of_birth' => $this->date_of_birth,
+                    'joining_date' => $this->joining_date,
+                ]);
+            } else {
+                // Update existing user with current registration data
+                $user->update([
+                    'first_name' => $this->first_name,
+                    'last_name' => $this->last_name,
+                    'phone' => $this->phone,
+                    'gender' => $this->gender,
+                    'blood_group' => $this->blood_group,
+                    'religion' => $this->religion,
+                    'nid_number' => $this->nid_number,
+                    'birth_certificate_number' => $this->birth_certificate_number,
+                    'emergency_contact_number' => $this->emergency_contact_number,
+                    'date_of_birth' => $this->date_of_birth,
+                    'joining_date' => $this->joining_date,
+                ]);
+            }
+
+            // Check if member already exists for this user
+            $member = Member::where('user_id', $user->id)->first();
+
+            if (!$member) {
+                $member = Member::create([
+                    'user_id' => $user->id,
+                    'branch_id' => $this->branch_id,
+                    'address' => $this->address,
+                ]);
+            } else {
+                // Update existing member
+                $member->update([
+                    'branch_id' => $this->branch_id,
+                    'address' => $this->address,
+                ]);
+            }
 
             $this->update([
                 'member_id' => $member->id,

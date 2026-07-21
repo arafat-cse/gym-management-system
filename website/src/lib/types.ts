@@ -4,6 +4,18 @@ export type Branch = {
   address: string | null;
   phone: string | null;
   status: "active" | "inactive";
+  contact_details?: {
+    phones?: string[];
+    emails?: string[];
+  } | null;
+  operating_hours?: Record<
+    string,
+    {
+      open: string;
+      close: string;
+      is_closed: boolean;
+    }
+  > | null;
 };
 
 export type MembershipPlan = {

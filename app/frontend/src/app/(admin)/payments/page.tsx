@@ -183,24 +183,25 @@ export default function PaymentsPage() {
                       <Badge variant={STATUS_VARIANT[payment.status]}>{payment.status}</Badge>
                     </TableCell>
                     <TableCell className="text-right">
+                      {(payment.status === "pending" || payment.status === "rejected") && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          disabled={approvingId === payment.id}
+                          onClick={() => handleApprove(payment)}
+                          title="Approve"
+                        >
+                          {approvingId === payment.id ? (
+                            <Loader2 className="size-4 animate-spin" />
+                          ) : (
+                            <Check className="size-4 text-primary" />
+                          )}
+                        </Button>
+                      )}
                       {payment.status === "pending" && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            disabled={approvingId === payment.id}
-                            onClick={() => handleApprove(payment)}
-                          >
-                            {approvingId === payment.id ? (
-                              <Loader2 className="size-4 animate-spin" />
-                            ) : (
-                              <Check className="size-4 text-primary" />
-                            )}
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => setRejectTarget(payment)}>
-                            <X className="size-4 text-destructive" />
-                          </Button>
-                        </>
+                        <Button variant="ghost" size="icon" onClick={() => setRejectTarget(payment)} title="Reject">
+                          <X className="size-4 text-destructive" />
+                        </Button>
                       )}
                     </TableCell>
                   </TableRow>

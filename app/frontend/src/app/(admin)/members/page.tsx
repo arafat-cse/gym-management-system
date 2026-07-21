@@ -50,6 +50,12 @@ type FormState = {
   branch_id: string;
   gender: "male" | "female" | "other" | "";
   date_of_birth: string;
+  blood_group: string;
+  religion: string;
+  nid_number: string;
+  birth_certificate_number: string;
+  emergency_contact_number: string;
+  joining_date: string;
 };
 
 const EMPTY_FORM: FormState = {
@@ -62,6 +68,12 @@ const EMPTY_FORM: FormState = {
   branch_id: "",
   gender: "",
   date_of_birth: "",
+  blood_group: "",
+  religion: "",
+  nid_number: "",
+  birth_certificate_number: "",
+  emergency_contact_number: "",
+  joining_date: "",
 };
 
 export default function MembersPage() {
@@ -116,6 +128,12 @@ export default function MembersPage() {
       branch_id: member.branch_id ? String(member.branch_id) : "",
       gender: member.user.gender ?? "",
       date_of_birth: member.user.date_of_birth ?? "",
+      blood_group: member.user.blood_group ?? "",
+      religion: member.user.religion ?? "",
+      nid_number: member.user.nid_number ?? "",
+      birth_certificate_number: member.user.birth_certificate_number ?? "",
+      emergency_contact_number: member.user.emergency_contact_number ?? "",
+      joining_date: member.user.joining_date ?? "",
     });
     setDialogOpen(true);
   }
@@ -133,6 +151,12 @@ export default function MembersPage() {
         branch_id: form.branch_id ? Number(form.branch_id) : null,
         gender: form.gender || null,
         date_of_birth: form.date_of_birth || null,
+        blood_group: form.blood_group || null,
+        religion: form.religion || null,
+        nid_number: form.nid_number || null,
+        birth_certificate_number: form.birth_certificate_number || null,
+        emergency_contact_number: form.emergency_contact_number || null,
+        joining_date: form.joining_date || null,
       };
       if (form.password) payload.password = form.password;
 
@@ -365,6 +389,92 @@ export default function MembersPage() {
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label>Blood Group</Label>
+                  <Select
+                    value={form.blood_group || "none"}
+                    onValueChange={(v) => setForm({ ...form, blood_group: v === "none" ? "" : v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select blood group" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Unspecified</SelectItem>
+                      <SelectItem value="A+">A+</SelectItem>
+                      <SelectItem value="A-">A-</SelectItem>
+                      <SelectItem value="B+">B+</SelectItem>
+                      <SelectItem value="B-">B-</SelectItem>
+                      <SelectItem value="AB+">AB+</SelectItem>
+                      <SelectItem value="AB-">AB-</SelectItem>
+                      <SelectItem value="O+">O+</SelectItem>
+                      <SelectItem value="O-">O-</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Religion</Label>
+                  <Select
+                    value={form.religion || "none"}
+                    onValueChange={(v) => setForm({ ...form, religion: v === "none" ? "" : v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select religion" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Unspecified</SelectItem>
+                      <SelectItem value="Islam">Islam</SelectItem>
+                      <SelectItem value="Hinduism">Hinduism</SelectItem>
+                      <SelectItem value="Christianity">Christianity</SelectItem>
+                      <SelectItem value="Buddhism">Buddhism</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="nid_number">NID Number</Label>
+                  <Input
+                    id="nid_number"
+                    placeholder="13-digit NID number"
+                    value={form.nid_number}
+                    onChange={(e) => setForm({ ...form, nid_number: e.target.value })}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="birth_certificate_number">Birth Certificate Number</Label>
+                  <Input
+                    id="birth_certificate_number"
+                    placeholder="Birth certificate number"
+                    value={form.birth_certificate_number}
+                    onChange={(e) => setForm({ ...form, birth_certificate_number: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="emergency_contact_number">Emergency Contact</Label>
+                  <Input
+                    id="emergency_contact_number"
+                    placeholder="Emergency contact number"
+                    value={form.emergency_contact_number}
+                    onChange={(e) => setForm({ ...form, emergency_contact_number: e.target.value })}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="joining_date">Joining Date</Label>
+                  <Input
+                    id="joining_date"
+                    type="date"
+                    value={form.joining_date}
+                    onChange={(e) => setForm({ ...form, joining_date: e.target.value })}
+                  />
                 </div>
               </div>
             </div>

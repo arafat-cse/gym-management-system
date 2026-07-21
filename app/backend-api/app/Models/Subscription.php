@@ -35,4 +35,11 @@ class Subscription extends Model
     {
         return $this->belongsTo(MembershipPlan::class);
     }
+
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active')
+            ->where('start_date', '<=', now())
+            ->where('end_date', '>=', now());
+    }
 }

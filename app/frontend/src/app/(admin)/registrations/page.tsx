@@ -159,28 +159,30 @@ export default function RegistrationsPage() {
                       <Badge variant={STATUS_VARIANT[reg.status]}>{reg.status}</Badge>
                     </TableCell>
                     <TableCell className="text-right">
+                      {(reg.status === "pending" || reg.status === "rejected") && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          disabled={approvingId === reg.id}
+                          onClick={() => handleApprove(reg)}
+                          title="Approve"
+                        >
+                          {approvingId === reg.id ? (
+                            <Loader2 className="size-4 animate-spin" />
+                          ) : (
+                            <Check className="size-4 text-primary" />
+                          )}
+                        </Button>
+                      )}
                       {reg.status === "pending" && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            disabled={approvingId === reg.id}
-                            onClick={() => handleApprove(reg)}
-                          >
-                            {approvingId === reg.id ? (
-                              <Loader2 className="size-4 animate-spin" />
-                            ) : (
-                              <Check className="size-4 text-primary" />
-                            )}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setRejectTarget(reg)}
-                          >
-                            <X className="size-4 text-destructive" />
-                          </Button>
-                        </>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setRejectTarget(reg)}
+                          title="Reject"
+                        >
+                          <X className="size-4 text-destructive" />
+                        </Button>
                       )}
                     </TableCell>
                   </TableRow>

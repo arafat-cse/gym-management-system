@@ -26,16 +26,16 @@ class PaymentController extends Controller
 
     public function approve(Request $request, Payment $payment)
     {
-        if ($payment->status !== 'pending') {
+        if (!in_array($payment->status, ['pending', 'rejected'])) {
             throw ValidationException::withMessages([
-                'status' => ['This payment has already been processed.'],
+                'status' => ['This payment is already approved.'],
             ]);
         }
 
         $subscription = DB::transaction(function () use ($payment, $request) {
             $registration = $payment->memberRegistration;
 
-            $member = $registration->status === 'pending'
+            $member = in_array($registration->status, ['pending', 'rejected'])
                 ? $registration->approveIntoMember($request->user()->id)
                 : $registration->member;
 

@@ -7,6 +7,7 @@ const LINK_COLUMNS = [
     links: [
       { href: "/pricing", label: "Membership Plans" },
       { href: "/trainers", label: "Our Trainers" },
+      { href: "/gallery", label: "Gallery" },
       { href: "/about", label: "About Us" },
     ],
   },

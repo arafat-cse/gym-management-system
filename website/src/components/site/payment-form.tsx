@@ -264,7 +264,7 @@ export function PaymentForm({
 
           <Button type="submit" size="lg" disabled={submitting || numbersForMethod.length === 0} className="mt-4 font-bold uppercase tracking-wider text-xs py-6">
             {submitting && <Loader2 className="animate-spin mr-2 size-4" />}
-            Submit Payment
+            Pay ৳{selectedPlan ? amountDue.toFixed(0) : "0"}
           </Button>
         </form>
       </CardContent>
