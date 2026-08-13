@@ -25,6 +25,16 @@ class AuthController extends Controller
             ]);
         }
 
+        // Check if member has active subscription
+        if ($user->hasRole('member')) {
+            $member = $user->member;
+            if (!$member || !$member->subscriptions()->active()->exists()) {
+                throw ValidationException::withMessages([
+                    'email' => ['Your membership plan has expired. Please contact admin to renew your plan.'],
+                ]);
+            }
+        }
+
         $token = $user->createToken('user-token')->plainTextToken;
 
         return response()->json([

@@ -4,10 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 class MemberRegistration extends Model
 {
     protected $fillable = [
+        'member_id',
         'first_name',
         'last_name',
         'email',
@@ -50,5 +53,83 @@ class MemberRegistration extends Model
     public function approvedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function member(): BelongsTo
+    {
+        return $this->belongsTo(Member::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function approveIntoMember(int $approvedByUserId): Member
+    {
+        return DB::transaction(function () use ($approvedByUserId) {
+            // Check if user already exists from previous approval
+            $user = User::where('email', $this->email)->first();
+
+            if (!$user) {
+                $user = User::create([
+                    'first_name' => $this->first_name,
+                    'last_name' => $this->last_name,
+                    'email' => $this->email,
+                    'phone' => $this->phone,
+                    'password' => $this->password,
+                    'role' => 'member',
+                    'gender' => $this->gender,
+                    'blood_group' => $this->blood_group,
+                    'religion' => $this->religion,
+                    'nid_number' => $this->nid_number,
+                    'birth_certificate_number' => $this->birth_certificate_number,
+                    'emergency_contact_number' => $this->emergency_contact_number,
+                    'date_of_birth' => $this->date_of_birth,
+                    'joining_date' => $this->joining_date,
+                ]);
+            } else {
+                // Update existing user with current registration data
+                $user->update([
+                    'first_name' => $this->first_name,
+                    'last_name' => $this->last_name,
+                    'phone' => $this->phone,
+                    'gender' => $this->gender,
+                    'blood_group' => $this->blood_group,
+                    'religion' => $this->religion,
+                    'nid_number' => $this->nid_number,
+                    'birth_certificate_number' => $this->birth_certificate_number,
+                    'emergency_contact_number' => $this->emergency_contact_number,
+                    'date_of_birth' => $this->date_of_birth,
+                    'joining_date' => $this->joining_date,
+                ]);
+            }
+
+            // Check if member already exists for this user
+            $member = Member::where('user_id', $user->id)->first();
+
+            if (!$member) {
+                $member = Member::create([
+                    'user_id' => $user->id,
+                    'branch_id' => $this->branch_id,
+                    'address' => $this->address,
+                ]);
+            } else {
+                // Update existing member
+                $member->update([
+                    'branch_id' => $this->branch_id,
+                    'address' => $this->address,
+                ]);
+            }
+
+            $this->update([
+                'member_id' => $member->id,
+                'status' => 'approved',
+                'approved_by' => $approvedByUserId,
+                'approved_at' => now(),
+            ]);
+
+            return $member;
+        });
     }
 }

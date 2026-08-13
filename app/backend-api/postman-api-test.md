@@ -243,3 +243,153 @@ GET    /api/v1/admin/subscriptions/{id}
 PUT    /api/v1/admin/subscriptions/{id}           body: status (pending|active|expired|cancelled), start_date, end_date, price_paid, notes
 DELETE /api/v1/admin/subscriptions/{id}
 ```
+
+## 12. Trainers (public browse + admin CRUD + schedule/specializations + booking)
+
+### Public — browse active trainers (no token lagbe na)
+```
+GET http://127.0.0.1:8123/api/v1/trainers
+GET http://127.0.0.1:8123/api/v1/trainers/{id}
+```
+
+### Admin — create trainer (User + Trainer ekshathe create hoy, role: trainer)
+```
+POST http://127.0.0.1:8123/api/v1/admin/trainers
+Authorization: Bearer <admin-token>
+Content-Type: application/json
+
+{
+  "first_name": "Kabir",
+  "last_name": "Hossain",
+  "email": "kabir@gms.test",
+  "password": "password",
+  "branch_id": 1,
+  "specialization": "CrossFit",
+  "session_rate": 800
+}
+```
+```
+GET    /api/v1/admin/trainers          (paginated)
+GET    /api/v1/admin/trainers/{id}     (+ specializations + schedules loaded)
+PUT    /api/v1/admin/trainers/{id}
+DELETE /api/v1/admin/trainers/{id}     -> linked User o delete hoye jabe (cascade)
+```
+
+### Admin — set weekly schedule (full replace — pura array pathate hobe, patch na)
+```
+PUT /api/v1/admin/trainers/{id}/schedule
+Authorization: Bearer <admin-token>
+Content-Type: application/json
+
+{
+  "schedules": [
+    {"day_of_week": 1, "start_time": "09:00", "end_time": "17:00"},
+    {"day_of_week": 3, "start_time": "09:00", "end_time": "17:00"}
+  ]
+}
+```
+`GET /api/v1/admin/trainers/{id}/schedule` — current schedule dekhar jonno.
+
+### Admin — specializations
+```
+GET    /api/v1/admin/trainers/{id}/specializations
+POST   /api/v1/admin/trainers/{id}/specializations   body: {"specialization_name": "Yoga", "certification_level": "advanced"}
+DELETE /api/v1/admin/trainers/{id}/specializations/{specializationId}
+```
+
+### Admin — training sessions (view + status update, no create — member e create kore)
+```
+GET /api/v1/admin/training-sessions                    (filter: ?status=, ?trainer_id=, ?member_id=)
+GET /api/v1/admin/training-sessions/{id}
+PUT /api/v1/admin/training-sessions/{id}                body: status (pending|confirmed|completed|cancelled|no_show), fee, payment_status, trainer_notes
+```
+`status: completed` e set korle trainer er `total_sessions` counter automatic +1 hoy.
+
+### User (member) — browse trainers + book session
+```
+GET  /api/v1/user/trainers                              (staff/trainer/member shobai dekhte pare)
+GET  /api/v1/user/trainers/{id}                          (+ schedules shoho)
+```
+```
+POST /api/v1/user/training-sessions
+Authorization: Bearer <member-token>
+Content-Type: application/json
+
+{
+  "trainer_id": 1,
+  "session_date": "2026-07-20",
+  "start_time": "10:00",
+  "end_time": "11:00"
+}
+```
+`fee` automatic trainer er `session_rate` theke snapshot hoy, `status: pending` diye shuru hoy.
+
+```
+GET  /api/v1/user/training-sessions                      (nijer sob session)
+GET  /api/v1/user/training-sessions/{id}
+POST /api/v1/user/training-sessions/{id}/cancel           (pending/confirmed obostha theke)
+POST /api/v1/user/training-sessions/{id}/rating           body: {"member_rating": 5}  — sudhu completed session e
+```
+Onno member er session dekhte gele (member_id mismatch) → `403`.
+
+## Notes (Trainer)
+
+- Trainer create/delete Member/Staff er moto — User + Trainer transaction e ekshathe, delete korle cascade.
+- Schedule-conflict / double-booking check ekhono nai — jekono time e book kora jay, trainer er actual `trainer_schedules` er against validate hoy na.
+- Review model alada nai — rating shorashori `training_sessions.member_rating` e thake, `rate()` call korle trainer er `rating_avg` shob completed+rated session er average hishebe recompute hoy.
+
+## 13. Manual Payment (bKash/Nagad) — registration + plan + payment proof → admin approve → Member+Subscription
+
+SSLCommerz nai, tai flow: admin ekta bKash/Nagad number publish kore rakhe → prospect (notun user) register kore → shei number e nijei taka pathay → transaction ID (+ optional screenshot) submit kore → staff/admin nijer bKash/Nagad statement dekhe match kore approve/reject kore. Approve hole ekshathe: `User` + `Member` create hoy (jodi ageo na hoye thake), ar shei plan diye ekta `active` `Subscription` create hoy.
+
+### Admin — payment numbers manage (config, jekhane taka pathabe)
+```
+POST   /api/v1/admin/payment-numbers
+Authorization: Bearer <admin-token>
+Content-Type: application/json
+
+{ "method": "bkash", "number": "01700000000", "label": "Merchant" }
+```
+```
+GET    /api/v1/admin/payment-numbers
+PUT    /api/v1/admin/payment-numbers/{id}
+DELETE /api/v1/admin/payment-numbers/{id}
+```
+
+### Public — kon number e pathabe dekhe (no token)
+```
+GET http://127.0.0.1:8123/api/v1/payment-numbers
+```
+
+### Public — register (age er moto), tarpor payment submit
+```
+POST /api/v1/register    body: first_name, last_name, email, password, ... (age er section dekho)
+```
+Response e `registration.id` pawa jabe — oita diye:
+```
+POST http://127.0.0.1:8123/api/v1/registrations/{registrationId}/payments
+Content-Type: multipart/form-data
+
+membership_plan_id: 1
+method: bkash
+sender_number: 01711111111
+transaction_id: TRX123ABC     (unique lagbe, same ID abar submit hobe na)
+amount: 1500
+screenshot: (file, optional, image, max 2MB)
+```
+Response e `payment.screenshot_url` pawa jabe (image thakle).
+
+### Admin/Staff — payment review + approve/reject
+```
+GET  /api/v1/admin/payments                  (filter: ?status=pending)
+GET  /api/v1/admin/payments/{id}
+POST /api/v1/admin/payments/{id}/approve      -> 200, returns new active Subscription; User+Member create hoy (jodi na hoye thake)
+POST /api/v1/admin/payments/{id}/reject       body: {"rejection_reason": "..."}  -> registration pending e thake, resubmit kora jabe
+```
+Approve er por notun member shathe shathe `/api/v1/user/login` diye login korte parbe (registration e diya password diye).
+
+## Notes (Payment)
+
+- Ekbar approve/reject hoye gele shei payment abar process kora jay na (`422`).
+- Shomoy transaction_id diye dutobar submit korte gele validation e atke jay (`unique:payments,transaction_id`).
+- Ekhono sudhu **notun registration** er jonno — existing approved member er renewal payment (porer mash er plan kena) ei flow diye hoy na, seta porer step.

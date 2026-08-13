@@ -1,0 +1,56 @@
+import {
+  LayoutDashboard,
+  Building2,
+  Users,
+  UserCog,
+  CreditCard,
+  ClipboardList,
+  Dumbbell,
+  UserPlus,
+  CalendarClock,
+  Wallet,
+  Smartphone,
+  CheckSquare,
+  Mail,
+  Ticket,
+  Salad,
+  Activity,
+  HeartPulse,
+  Star,
+  Wrench,
+  KeyRound,
+  CalendarOff,
+  Receipt,
+  type LucideIcon,
+} from "lucide-react";
+
+export type NavItem = {
+  title: string;
+  href: string;
+  icon: LucideIcon;
+};
+
+export const adminNav: NavItem[] = [
+  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { title: "Branches", href: "/branches", icon: Building2 },
+  { title: "Members", href: "/members", icon: Users },
+  { title: "Staff", href: "/staff", icon: UserCog },
+  { title: "Plans", href: "/plans", icon: CreditCard },
+  { title: "Subscriptions", href: "/subscriptions", icon: ClipboardList },
+  { title: "Trainers", href: "/trainers", icon: Dumbbell },
+  { title: "Registrations", href: "/registrations", icon: UserPlus },
+  { title: "Payments", href: "/payments", icon: Wallet },
+  { title: "Payment Numbers", href: "/payment-numbers", icon: Smartphone },
+  { title: "Training Sessions", href: "/training-sessions", icon: CalendarClock },
+  { title: "Attendance", href: "/attendance", icon: CheckSquare },
+  { title: "Inquiries", href: "/inquiries", icon: Mail },
+  { title: "Coupons", href: "/coupons", icon: Ticket },
+  { title: "Diet Plans", href: "/diet-plans", icon: Salad },
+  { title: "Workouts", href: "/workouts", icon: Activity },
+  { title: "Health Info", href: "/health-info", icon: HeartPulse },
+  { title: "Reviews", href: "/reviews", icon: Star },
+  { title: "Equipment", href: "/equipment", icon: Wrench },
+  { title: "Lockers", href: "/lockers", icon: KeyRound },
+  { title: "Leave Requests", href: "/leave-requests", icon: CalendarOff },
+  { title: "Expenses", href: "/expenses", icon: Receipt },
+];

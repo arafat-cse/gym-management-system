@@ -3,9 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Member;
 use App\Models\MemberRegistration;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -29,44 +27,31 @@ class MemberRegistrationController extends Controller
     {
         $registration = $memberRegistration;
 
-        if ($registration->status !== 'pending') {
+        // Allow approval of pending, rejected, or previously approved registrations
+        if ($registration->status === 'completed') {
             throw ValidationException::withMessages([
-                'status' => ['This registration has already been processed.'],
+                'status' => ['This registration is already completed.'],
             ]);
         }
 
-        $member = DB::transaction(function () use ($registration, $request) {
-            $user = User::create([
-                'first_name' => $registration->first_name,
-                'last_name' => $registration->last_name,
-                'email' => $registration->email,
-                'phone' => $registration->phone,
-                'password' => $registration->password,
-                'role' => 'member',
-                'gender' => $registration->gender,
-                'blood_group' => $registration->blood_group,
-                'religion' => $registration->religion,
-                'nid_number' => $registration->nid_number,
-                'birth_certificate_number' => $registration->birth_certificate_number,
-                'emergency_contact_number' => $registration->emergency_contact_number,
-                'date_of_birth' => $registration->date_of_birth,
-                'joining_date' => $registration->joining_date,
-            ]);
+        // Allow admin to add detailed information during approval
+        $data = $request->validate([
+            'address' => ['nullable', 'string', 'max:255'],
+            'branch_id' => ['nullable', 'exists:branches,id'],
+            'gender' => ['nullable', 'in:male,female,other'],
+            'blood_group' => ['nullable', 'in:A+,A-,B+,B-,AB+,AB-,O+,O-'],
+            'religion' => ['nullable', 'in:Islam,Hinduism,Christianity,Buddhism,Other'],
+            'nid_number' => ['nullable', 'string', 'max:50'],
+            'birth_certificate_number' => ['nullable', 'string', 'max:50'],
+            'emergency_contact_number' => ['nullable', 'string', 'max:30'],
+            'date_of_birth' => ['nullable', 'date'],
+            'joining_date' => ['nullable', 'date'],
+        ]);
 
-            $member = Member::create([
-                'user_id' => $user->id,
-                'branch_id' => $registration->branch_id,
-                'address' => $registration->address,
-            ]);
+        // Update registration with detailed information before approval
+        $registration->update(array_filter($data));
 
-            $registration->update([
-                'status' => 'approved',
-                'approved_by' => $request->user()->id,
-                'approved_at' => now(),
-            ]);
-
-            return $member;
-        });
+        $member = $registration->approveIntoMember($request->user()->id);
 
         return $member->load(['user', 'branch']);
     }
@@ -75,9 +60,10 @@ class MemberRegistrationController extends Controller
     {
         $registration = $memberRegistration;
 
-        if ($registration->status !== 'pending') {
+        // Allow rejection of pending, rejected, or approved registrations
+        if ($registration->status === 'completed') {
             throw ValidationException::withMessages([
-                'status' => ['This registration has already been processed.'],
+                'status' => ['This registration is already completed and cannot be rejected.'],
             ]);
         }
 
@@ -85,12 +71,24 @@ class MemberRegistrationController extends Controller
             'rejection_reason' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $registration->update([
-            'status' => 'rejected',
-            'rejection_reason' => $data['rejection_reason'] ?? null,
-            'approved_by' => $request->user()->id,
-            'approved_at' => now(),
-        ]);
+        DB::transaction(function () use ($registration, $data, $request) {
+            // If registration was approved, remove the member and subscriptions
+            if ($registration->status === 'approved' && $registration->member) {
+                $member = $registration->member;
+                // Delete subscriptions
+                $member->subscriptions()->delete();
+                // Delete member (keep the user for potential re-approval)
+                $member->delete();
+            }
+
+            $registration->update([
+                'status' => 'rejected',
+                'rejection_reason' => $data['rejection_reason'] ?? null,
+                'approved_by' => $request->user()->id,
+                'approved_at' => now(),
+                'member_id' => null, // Remove the member reference
+            ]);
+        });
 
         return $registration;
     }

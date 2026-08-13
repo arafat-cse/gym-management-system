@@ -15,6 +15,7 @@ class MemberRegistrationRequest extends FormRequest
     public function rules(): array
     {
         return [
+            // Basic information - collected during registration
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'email' => [
@@ -25,11 +26,13 @@ class MemberRegistrationRequest extends FormRequest
             ],
             'password' => ['required', 'string', 'min:6'],
             'phone' => ['nullable', 'string', 'max:30'],
+
+            // These detailed fields will be filled by admin/staff later
             'address' => ['nullable', 'string', 'max:255'],
             'branch_id' => ['nullable', 'exists:branches,id'],
             'gender' => ['nullable', 'in:male,female,other'],
-            'blood_group' => ['nullable', 'string', 'max:10'],
-            'religion' => ['nullable', 'string', 'max:100'],
+            'blood_group' => ['nullable', 'in:A+,A-,B+,B-,AB+,AB-,O+,O-'],
+            'religion' => ['nullable', 'in:Islam,Hinduism,Christianity,Buddhism,Other'],
             'nid_number' => ['nullable', 'string', 'max:50'],
             'birth_certificate_number' => ['nullable', 'string', 'max:50'],
             'emergency_contact_number' => ['nullable', 'string', 'max:30'],
