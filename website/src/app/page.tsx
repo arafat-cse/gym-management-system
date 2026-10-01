@@ -108,7 +108,7 @@ export default async function HomePage() {
             </p>
             <div className="flex flex-wrap gap-4 pt-2">
               <Button size="lg" className="px-8 font-bold uppercase tracking-wider text-xs py-6 shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all duration-300" asChild>
-                <Link href="/register">
+                <Link href="http://localhost:3000/login">
                   Get Started Now <ArrowRight className="size-4 ml-2" />
                 </Link>
               </Button>
@@ -305,7 +305,7 @@ export default async function HomePage() {
               </p>
               <div className="flex flex-wrap justify-center gap-4 pt-4">
                 <Button size="lg" className="px-8 font-bold uppercase tracking-wider text-xs py-6 shadow-lg shadow-primary/20" asChild>
-                  <Link href="/register">
+                  <Link href="http://localhost:3000/login">
                     Join Now <ArrowRight className="size-4 ml-2" />
                   </Link>
                 </Button>

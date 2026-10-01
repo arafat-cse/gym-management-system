@@ -87,7 +87,7 @@ export function SiteNavbar() {
             <Link href="/pricing">View Plans</Link>
           </Button>
           <Button asChild>
-            <Link href="/register">Join Now</Link>
+            <Link href="http://localhost:3000/login">Join Now</Link>
           </Button>
         </div>
 
@@ -142,7 +142,7 @@ export function SiteNavbar() {
                 <Link href="/pricing">View Plans</Link>
               </Button>
               <Button asChild onClick={() => setOpen(false)}>
-                <Link href="/register">Join Now</Link>
+                <Link href="http://localhost:3000/login">Join Now</Link>
               </Button>
             </div>
           </SheetContent>

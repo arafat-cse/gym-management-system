@@ -1,13 +1,19 @@
+import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
 const BACKEND_URL = process.env.BACKEND_API_URL ?? "http://127.0.0.1:8000/api/v1";
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
+  const token = cookies().get("gms_user_token")?.value;
 
   const backendRes = await fetch(`${BACKEND_URL}/register`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     body,
     cache: "no-store",
   });

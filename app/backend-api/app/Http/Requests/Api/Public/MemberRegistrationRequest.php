@@ -21,10 +21,11 @@ class MemberRegistrationRequest extends FormRequest
             'email' => [
                 'required',
                 'email',
-                'unique:users,email',
+                // The account is created at the signup step, so the email may
+                // already exist in users — only block duplicate pending requests.
                 Rule::unique('member_registrations', 'email')->where('status', 'pending'),
             ],
-            'password' => ['required', 'string', 'min:6'],
+            'password' => ['nullable', 'string', 'min:6'],
             'phone' => ['nullable', 'string', 'max:30'],
 
             // These detailed fields will be filled by admin/staff later

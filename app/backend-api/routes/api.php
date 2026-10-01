@@ -10,6 +10,8 @@ use App\Http\Controllers\Api\V1\Admin\DiscountController as AdminDiscountControl
 use App\Http\Controllers\Api\V1\Admin\EquipmentController as AdminEquipmentController;
 use App\Http\Controllers\Api\V1\Admin\ExerciseController as AdminExerciseController;
 use App\Http\Controllers\Api\V1\Admin\ExpenseController as AdminExpenseController;
+use App\Http\Controllers\Api\V1\Auth\AuthController as SiteAuthController;
+use App\Http\Controllers\Api\V1\Auth\GoogleController;
 use App\Http\Controllers\Api\V1\Admin\HealthInfoController as AdminHealthInfoController;
 use App\Http\Controllers\Api\V1\Admin\LeadInquiryController as AdminLeadInquiryController;
 use App\Http\Controllers\Api\V1\Admin\LeaveRequestController as AdminLeaveRequestController;
@@ -54,6 +56,11 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function () {
 
     Route::post('/register', [RegistrationController::class, 'store']);
+    Route::get('/auth/google', [GoogleController::class, 'redirect']);
+    Route::get('/auth/google/callback', [GoogleController::class, 'callback']);
+    Route::post('/auth/login', [SiteAuthController::class, 'login']);
+    Route::post('/auth/signup', [SiteAuthController::class, 'signup']);
+    Route::get('/auth/me', [SiteAuthController::class, 'me'])->middleware('auth:sanctum');
     Route::get('/branches', [PublicBranchController::class, 'index']);
     Route::get('/plans', [PricingController::class, 'index']);
     Route::get('/trainers', [PublicTrainerController::class, 'index']);

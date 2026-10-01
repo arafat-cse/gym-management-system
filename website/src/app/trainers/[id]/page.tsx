@@ -138,7 +138,7 @@ export default async function TrainerDetailPage({
                 Join PulseFit and book a session once your membership is active.
               </p>
               <Button asChild>
-                <Link href="/register">
+                <Link href="http://localhost:3000/login">
                   Join Now <ArrowRight className="size-4" />
                 </Link>
               </Button>

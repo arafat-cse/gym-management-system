@@ -5,19 +5,21 @@ const USER_TOKEN_COOKIE = "gms_user_token";
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const adminToken = req.cookies.get(ADMIN_TOKEN_COOKIE)?.value;
+  const userToken = req.cookies.get(USER_TOKEN_COOKIE)?.value;
 
+  // Member portal (members, staff, trainers)
   if (pathname.startsWith("/portal")) {
     const isPublic = pathname === "/portal/login";
-    const token = req.cookies.get(USER_TOKEN_COOKIE)?.value;
 
-    if (!token && !isPublic) {
+    if (!userToken && !isPublic) {
       const url = req.nextUrl.clone();
       url.pathname = "/portal/login";
       url.searchParams.set("next", pathname);
       return NextResponse.redirect(url);
     }
 
-    if (token && pathname === "/portal/login") {
+    if (userToken && isPublic) {
       const url = req.nextUrl.clone();
       url.pathname = "/portal/dashboard";
       url.search = "";
@@ -27,20 +29,36 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const isPublic = pathname === "/login";
-  const token = req.cookies.get(ADMIN_TOKEN_COOKIE)?.value;
+  // Public auth pages — bounce already-authenticated users to their area
+  if (
+    pathname === "/login" ||
+    pathname === "/admin/login" ||
+    pathname === "/auth/callback"
+  ) {
+    if (pathname !== "/auth/callback") {
+      if (adminToken) {
+        const url = req.nextUrl.clone();
+        url.pathname = "/dashboard";
+        url.search = "";
+        return NextResponse.redirect(url);
+      }
 
-  if (!token && !isPublic) {
-    const url = req.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
+      if (userToken) {
+        const url = req.nextUrl.clone();
+        url.pathname = "/portal/dashboard";
+        url.search = "";
+        return NextResponse.redirect(url);
+      }
+    }
+
+    return NextResponse.next();
   }
 
-  if (token && pathname === "/login") {
+  // Everything else is the admin area
+  if (!adminToken) {
     const url = req.nextUrl.clone();
-    url.pathname = "/dashboard";
-    url.search = "";
+    url.pathname = "/admin/login";
+    url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
 

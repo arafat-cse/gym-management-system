@@ -12,7 +12,9 @@ class RegistrationController extends Controller
     public function store(MemberRegistrationRequest $request)
     {
         $data = $request->validated();
-        $data['password'] = Hash::make($data['password']);
+        // Signup step already created the account, so password may be absent —
+        // keep a random one so approveIntoMember can still provision a user.
+        $data['password'] = Hash::make($data['password'] ?? bin2hex(random_bytes(8)));
         $data['status'] = 'pending';
 
         $registration = MemberRegistration::create($data);

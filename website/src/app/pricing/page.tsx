@@ -108,7 +108,7 @@ export default async function PricingPage() {
             Register your interest and our expert coaching staff will reach out to help you choose the right path.
           </p>
           <Button size="lg" className="px-8 font-bold uppercase tracking-wider text-xs py-6 shadow-lg shadow-primary/20 mt-2" asChild>
-            <Link href="/register">
+            <Link href="http://localhost:3000/login">
               Get Started <ArrowRight className="size-4 ml-2" />
             </Link>
           </Button>

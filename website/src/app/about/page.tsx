@@ -147,7 +147,7 @@ export default function AboutPage() {
           </p>
           <div className="flex flex-wrap justify-center gap-4 mt-2">
             <Button size="lg" className="px-8 font-bold uppercase tracking-wider text-xs py-6 shadow-lg shadow-primary/20" asChild>
-              <Link href="/register">
+              <Link href="http://localhost:3000/login">
                 Join Now <ArrowRight className="size-4 ml-2" />
               </Link>
             </Button>
