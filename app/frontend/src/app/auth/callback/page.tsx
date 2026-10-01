@@ -62,7 +62,7 @@ function GoogleCallback() {
         return;
       }
 
-      window.location.href = `${WEBSITE_URL}/register`;
+      window.location.replace(`${WEBSITE_URL}/register`);
     }
 
     continueFlow();

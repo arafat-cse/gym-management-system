@@ -116,9 +116,9 @@ function RegisterFlow() {
           return;
         case "active":
           // Membership is active — send straight to the member portal.
-          // The session cookie is shared across localhost ports, so the
-          // portal at :3000 picks it up without a second login.
-          window.location.href = "http://localhost:3000/portal/dashboard";
+          // replace() keeps the login page out of the browser history, so
+          // "back" from the dashboard never lands on the login form again.
+          window.location.replace("http://localhost:3000/portal/dashboard");
           return;
         case "expired":
           setPhase("expired");

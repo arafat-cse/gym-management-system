@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Dumbbell, Loader2 } from "lucide-react";
 
@@ -30,6 +30,41 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
+
+  // If the browser restores this page from the back-forward cache after
+  // login, reload so the middleware can bounce the user to the dashboard.
+  useEffect(() => {
+    function onShow(e: PageTransitionEvent) {
+      if (e.persisted) window.location.reload();
+    }
+    window.addEventListener("pageshow", onShow);
+    return () => window.removeEventListener("pageshow", onShow);
+  }, []);
+
+  // Already signed in (e.g. user pressed "back" to this page)? Leave
+  // immediately instead of showing the form again.
+  useEffect(() => {
+    fetch("/api/auth/check")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authenticated) {
+          router.replace("/dashboard");
+          router.refresh();
+        } else {
+          setChecking(false);
+        }
+      })
+      .catch(() => setChecking(false));
+  }, [router]);
+
+  if (checking) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-muted">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -49,8 +84,10 @@ function LoginForm() {
         return;
       }
 
+      // replace() keeps the login page out of the history, so "back"
+      // from the dashboard never returns to this form.
       const next = searchParams.get("next") ?? "/dashboard";
-      router.push(next);
+      router.replace(next);
       router.refresh();
     } finally {
       setLoading(false);

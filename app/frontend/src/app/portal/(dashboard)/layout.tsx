@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import type { AuthUser } from "@/lib/types";
 import { portalApi } from "@/lib/portal-api";
 import { PortalSidebar } from "@/components/portal/portal-sidebar";
+import { HistoryGuard } from "@/components/history-guard";
 import { Separator } from "@/components/ui/separator";
 import {
   SidebarInset,
@@ -27,6 +28,7 @@ export default async function PortalLayout({
 
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
+      <HistoryGuard />
       <PortalSidebar user={user} />
       <SidebarInset>
         <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">

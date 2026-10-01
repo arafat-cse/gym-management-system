@@ -1,4 +1,5 @@
 import { AppSidebar } from "@/components/admin/app-sidebar";
+import { HistoryGuard } from "@/components/history-guard";
 import { Separator } from "@/components/ui/separator";
 import {
   SidebarInset,
@@ -17,6 +18,7 @@ export default async function AdminLayout({
 
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
+      <HistoryGuard />
       <AppSidebar />
       <SidebarInset>
         <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">

@@ -32,6 +32,17 @@ export default function LoginPage() {
 function MemberAuth() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [checking, setChecking] = useState(true);
+
+  // If the browser restores this page from the back-forward cache after
+  // login, reload so the middleware can bounce the user to their area.
+  useEffect(() => {
+    function onShow(e: PageTransitionEvent) {
+      if (e.persisted) window.location.reload();
+    }
+    window.addEventListener("pageshow", onShow);
+    return () => window.removeEventListener("pageshow", onShow);
+  }, []);
 
   // Route an authenticated member to the right place:
   // active members go to the portal, everyone else continues
@@ -46,12 +57,34 @@ function MemberAuth() {
           return;
         }
         const plan = searchParams.get("plan");
-        window.location.href = `${WEBSITE_URL}/register${plan ? `?plan=${plan}` : ""}`;
+        window.location.replace(`${WEBSITE_URL}/register${plan ? `?plan=${plan}` : ""}`);
       })
       .catch(() => {
-        window.location.href = WEBSITE_URL + "/register";
+        window.location.replace(WEBSITE_URL + "/register");
       });
   }, [router, searchParams]);
+
+  // Already signed in (e.g. user pressed "back" to this page)? Go straight
+  // to the right place instead of showing the form again.
+  useEffect(() => {
+    fetch("/api/member-auth/me")
+      .then((res) => {
+        if (res.ok) {
+          routeMember();
+        } else {
+          setChecking(false);
+        }
+      })
+      .catch(() => setChecking(false));
+  }, [routeMember]);
+
+  if (checking) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-muted">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return <AuthCard onAuthenticated={routeMember} error={searchParams.get("error")} />;
 }
