@@ -1,0 +1,628 @@
+// =====================================================================
+//  GYM MANAGEMENT SYSTEM — Database Diagram (DBML)
+//  Paste this whole file into https://dbdiagram.io editor
+//  36 tables | sections are color-coded and grouped
+// =====================================================================
+
+Project gym_management_system {
+  database_type: 'MySQL'
+  Note: 'Gym Management System — Relational Database Schema'
+}
+
+// ===================== 1. USERS & ACCESS =====================
+
+Table users [headercolor: #2E6DA4] {
+  id bigint [pk, increment]
+  first_name varchar [not null]
+  last_name varchar [not null]
+  email varchar [not null, unique]
+  phone varchar
+  email_verified_at timestamp
+  password varchar [not null]
+  role varchar [not null, default: 'member', note: 'enum: admin | staff | trainer | member']
+  gender varchar [note: 'enum: male | female | other']
+  blood_group varchar
+  religion varchar
+  nid_number varchar
+  birth_certificate_number varchar
+  emergency_contact_number varchar
+  date_of_birth date
+  joining_date date
+  remember_token varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table roles [headercolor: #2E6DA4] {
+  id bigint [pk, increment]
+  name varchar [not null, unique]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table permissions [headercolor: #2E6DA4] {
+  id bigint [pk, increment]
+  name varchar [not null, unique]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table permission_role [headercolor: #2E6DA4, note: 'M:N junction: roles <-> permissions'] {
+  role_id bigint [not null]
+  permission_id bigint [not null]
+  indexes {
+    (role_id, permission_id) [pk]
+  }
+}
+
+Table personal_access_tokens [headercolor: #2E6DA4, note: 'Polymorphic API tokens — no FK'] {
+  id bigint [pk, increment]
+  tokenable_type varchar [not null]
+  tokenable_id bigint [not null]
+  name varchar [not null]
+  token varchar(64) [not null, unique]
+  abilities text
+  last_used_at timestamp
+  expires_at timestamp
+  created_at timestamp
+  updated_at timestamp
+  indexes {
+    (tokenable_type, tokenable_id) [name: 'tokenable_index']
+  }
+}
+
+// ===================== 2. BRANCHES =====================
+
+Table branches [headercolor: #E67E22] {
+  id bigint [pk, increment]
+  name varchar [not null]
+  address varchar
+  phone varchar
+  contact_details json
+  operating_hours json
+  status varchar [not null, default: 'active', note: 'enum: active | inactive']
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ===================== 3. MEMBERS =====================
+
+Table members [headercolor: #27AE60] {
+  id bigint [pk, increment]
+  user_id bigint [not null, unique]
+  branch_id bigint
+  phone varchar
+  address varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table member_registrations [headercolor: #27AE60] {
+  id bigint [pk, increment]
+  member_id bigint
+  first_name varchar [not null]
+  last_name varchar [not null]
+  email varchar [not null]
+  phone varchar
+  password varchar [not null]
+  address varchar
+  branch_id bigint
+  gender varchar [note: 'enum: male | female | other']
+  blood_group varchar
+  religion varchar
+  nid_number varchar
+  birth_certificate_number varchar
+  emergency_contact_number varchar
+  date_of_birth date
+  joining_date date
+  status varchar [not null, default: 'pending', note: 'enum: pending | approved | rejected']
+  rejection_reason text
+  approved_by bigint
+  approved_at timestamp
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table health_info [headercolor: #27AE60] {
+  id bigint [pk, increment]
+  member_id bigint [not null, unique]
+  height decimal(5,2)
+  weight decimal(5,2)
+  bmi decimal(5,2)
+  blood_type varchar
+  allergies text
+  conditions text
+  medications text
+  emergency_contact varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table attendances [headercolor: #27AE60] {
+  id bigint [pk, increment]
+  member_id bigint [not null]
+  branch_id bigint
+  date date [not null]
+  check_in datetime [not null]
+  check_out datetime
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ===================== 4. MEMBERSHIP =====================
+
+Table membership_plans [headercolor: #8E44AD] {
+  id bigint [pk, increment]
+  name varchar [not null]
+  description text
+  price decimal(10,2) [not null]
+  duration_in_days int [not null]
+  features json
+  status varchar [not null, default: 'active', note: 'enum: active | inactive']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table subscriptions [headercolor: #8E44AD] {
+  id bigint [pk, increment]
+  member_id bigint [not null]
+  membership_plan_id bigint [not null]
+  price_paid decimal(10,2)
+  start_date date [not null]
+  end_date date [not null]
+  status varchar [not null, default: 'pending', note: 'enum: pending | active | expired | cancelled']
+  notes text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table lead_inquiries [headercolor: #8E44AD] {
+  id bigint [pk, increment]
+  name varchar [not null]
+  email varchar [not null]
+  phone varchar [not null]
+  membership_plan_id bigint
+  message text
+  status varchar [not null, default: 'new', note: 'enum: new | contacted | converted | closed']
+  notes text
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ===================== 5. STAFF & HR =====================
+
+Table staff [headercolor: #16A085] {
+  id bigint [pk, increment]
+  user_id bigint [not null, unique]
+  branch_id bigint
+  designation varchar
+  status varchar [not null, default: 'active', note: 'enum: active | inactive | on_leave']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table leave_requests [headercolor: #16A085] {
+  id bigint [pk, increment]
+  staff_id bigint [not null]
+  leave_type varchar [not null, default: 'casual', note: 'enum: sick | casual | annual | other']
+  start_date date [not null]
+  end_date date [not null]
+  reason text
+  status varchar [not null, default: 'pending', note: 'enum: pending | approved | rejected']
+  approved_by bigint
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ===================== 6. TRAINERS =====================
+
+Table trainers [headercolor: #C0392B] {
+  id bigint [pk, increment]
+  user_id bigint [not null, unique]
+  branch_id bigint
+  employee_id varchar [unique]
+  specialization varchar
+  certifications json
+  experience_years int [not null, default: 0]
+  hourly_rate decimal(10,2)
+  session_rate decimal(10,2)
+  bio text
+  rating_avg decimal(3,2) [not null, default: 0]
+  total_sessions int [not null, default: 0]
+  status varchar [not null, default: 'active', note: 'enum: active | on_leave | inactive']
+  join_date date
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table trainer_specializations [headercolor: #C0392B] {
+  id bigint [pk, increment]
+  trainer_id bigint [not null]
+  specialization_name varchar [not null]
+  certification_level varchar [note: 'enum: beginner | intermediate | advanced | expert']
+  certification_date date
+  expiry_date date
+  issuing_authority varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table trainer_schedules [headercolor: #C0392B] {
+  id bigint [pk, increment]
+  trainer_id bigint [not null]
+  day_of_week tinyint [not null]
+  start_time time [not null]
+  end_time time [not null]
+  is_available boolean [not null, default: true]
+  max_sessions int [not null, default: 1]
+  notes varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table training_sessions [headercolor: #C0392B] {
+  id bigint [pk, increment]
+  trainer_id bigint [not null]
+  member_id bigint [not null]
+  branch_id bigint
+  session_date date [not null]
+  start_time time [not null]
+  end_time time [not null]
+  session_type varchar [not null, default: 'personal', note: 'enum: personal | group | online']
+  status varchar [not null, default: 'pending', note: 'enum: pending | confirmed | completed | cancelled | no_show']
+  fee decimal(10,2)
+  payment_status varchar [not null, default: 'pending', note: 'enum: paid | pending | refunded']
+  notes text
+  member_rating tinyint
+  trainer_notes text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table reviews [headercolor: #C0392B] {
+  id bigint [pk, increment]
+  member_id bigint [not null]
+  trainer_id bigint [not null]
+  rating tinyint [not null]
+  comment text
+  status varchar [not null, default: 'pending', note: 'enum: pending | approved | rejected']
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ===================== 7. PAYMENTS & COUPONS =====================
+
+Table payment_numbers [headercolor: #D35400] {
+  id bigint [pk, increment]
+  method varchar [not null, note: 'enum: bkash | nagad']
+  number varchar [not null]
+  label varchar
+  is_active boolean [not null, default: true]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table coupons [headercolor: #D35400] {
+  id bigint [pk, increment]
+  code varchar [not null, unique]
+  type varchar [not null, note: 'enum: percentage | fixed']
+  discount decimal(10,2) [not null]
+  min_order decimal(10,2)
+  max_uses int
+  used_count int [not null, default: 0]
+  expires_at date
+  status varchar [not null, default: 'active', note: 'enum: active | inactive']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table payments [headercolor: #D35400] {
+  id bigint [pk, increment]
+  member_registration_id bigint [not null]
+  membership_plan_id bigint [not null]
+  coupon_id bigint
+  method varchar [not null, note: 'enum: bkash | nagad']
+  sender_number varchar [not null]
+  transaction_id varchar [not null, unique]
+  amount decimal(10,2) [not null]
+  discount_amount decimal(10,2)
+  screenshot_path varchar
+  status varchar [not null, default: 'pending', note: 'enum: pending | approved | rejected']
+  rejection_reason text
+  approved_by bigint
+  approved_at timestamp
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table discounts [headercolor: #D35400] {
+  id bigint [pk, increment]
+  coupon_id bigint [not null]
+  member_registration_id bigint [not null]
+  payment_id bigint
+  amount decimal(10,2) [not null]
+  used_at datetime [not null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table expenses [headercolor: #D35400] {
+  id bigint [pk, increment]
+  branch_id bigint
+  category varchar [not null, default: 'other', note: 'enum: rent | utilities | salary | equipment | maintenance | marketing | other']
+  amount decimal(10,2) [not null]
+  date date [not null]
+  description text
+  approved_by bigint
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ===================== 8. DIET MANAGEMENT =====================
+
+Table diet_plans [headercolor: #B7950B] {
+  id bigint [pk, increment]
+  name varchar [not null]
+  description text
+  duration_in_days int [not null]
+  type varchar [not null, default: 'general', note: 'enum: weight_loss | muscle_gain | maintenance | general']
+  calories int
+  status varchar [not null, default: 'active', note: 'enum: active | inactive']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table diet_meals [headercolor: #B7950B] {
+  id bigint [pk, increment]
+  diet_plan_id bigint [not null]
+  meal_type varchar [not null, note: 'enum: breakfast | lunch | dinner | snack']
+  name varchar [not null]
+  calories int
+  protein decimal(6,2)
+  carbs decimal(6,2)
+  fats decimal(6,2)
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table member_diets [headercolor: #B7950B] {
+  id bigint [pk, increment]
+  member_id bigint [not null]
+  diet_plan_id bigint [not null]
+  start_date date [not null]
+  end_date date
+  status varchar [not null, default: 'active', note: 'enum: active | completed | cancelled']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table diet_progress [headercolor: #B7950B] {
+  id bigint [pk, increment]
+  member_diet_id bigint [not null]
+  weight decimal(5,2) [not null]
+  date date [not null]
+  notes text
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ===================== 9. WORKOUTS & EXERCISES =====================
+
+Table exercises [headercolor: #2980B9] {
+  id bigint [pk, increment]
+  name varchar [not null]
+  category varchar [not null, default: 'strength', note: 'enum: cardio | strength | flexibility | balance']
+  muscle_group varchar
+  equipment_needed varchar
+  description text
+  video_url varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table member_workouts [headercolor: #2980B9] {
+  id bigint [pk, increment]
+  member_id bigint [not null]
+  trainer_id bigint
+  date date [not null]
+  duration_minutes int
+  type varchar [not null, default: 'personal', note: 'enum: personal | group | cardio | strength | mixed']
+  intensity varchar [not null, default: 'medium', note: 'enum: low | medium | high']
+  calories_burned int
+  status varchar [not null, default: 'scheduled', note: 'enum: scheduled | completed | cancelled']
+  notes text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table workout_exercises [headercolor: #2980B9, note: 'M:N junction: member_workouts <-> exercises'] {
+  id bigint [pk, increment]
+  member_workout_id bigint [not null]
+  exercise_id bigint [not null]
+  sets int
+  reps int
+  weight decimal(6,2)
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ===================== 10. EQUIPMENT & FACILITIES =====================
+
+Table equipment [headercolor: #7F8C8D] {
+  id bigint [pk, increment]
+  name varchar [not null]
+  type varchar
+  branch_id bigint
+  status varchar [not null, default: 'operational', note: 'enum: operational | maintenance | out_of_service']
+  purchase_date date
+  cost decimal(10,2)
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table equipment_maintenance [headercolor: #7F8C8D] {
+  id bigint [pk, increment]
+  equipment_id bigint [not null]
+  date date [not null]
+  cost decimal(10,2)
+  technician varchar
+  notes text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table lockers [headercolor: #7F8C8D] {
+  id bigint [pk, increment]
+  branch_id bigint
+  number varchar [not null]
+  size varchar [not null, default: 'medium', note: 'enum: small | medium | large']
+  status varchar [not null, default: 'available', note: 'enum: available | occupied | maintenance']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table member_lockers [headercolor: #7F8C8D, note: 'locker_id not unique — assignment history allowed'] {
+  id bigint [pk, increment]
+  member_id bigint [not null]
+  locker_id bigint [not null]
+  assigned_at datetime [not null]
+  status varchar [not null, default: 'active', note: 'enum: active | released']
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ===================== RELATIONSHIPS =====================
+
+// Access management
+Ref: permission_role.role_id > roles.id        // M:N junction
+Ref: permission_role.permission_id > permissions.id
+
+// Members -> users / branches
+Ref: members.user_id - users.id                // 1:1
+Ref: members.branch_id ?> branches.id
+
+// Registrations
+Ref: member_registrations.member_id ?> members.id
+Ref: member_registrations.branch_id ?> branches.id
+Ref: member_registrations.approved_by ?> users.id
+
+// Health & attendance
+Ref: health_info.member_id - members.id        // 1:1
+Ref: attendances.member_id > members.id
+Ref: attendances.branch_id ?> branches.id
+
+// Membership
+Ref: subscriptions.member_id > members.id
+Ref: subscriptions.membership_plan_id > membership_plans.id
+Ref: lead_inquiries.membership_plan_id ?> membership_plans.id
+
+// Staff / HR
+Ref: staff.user_id - users.id                  // 1:1
+Ref: staff.branch_id ?> branches.id
+Ref: leave_requests.staff_id > staff.id
+Ref: leave_requests.approved_by ?> users.id
+
+// Trainers
+Ref: trainers.user_id - users.id               // 1:1
+Ref: trainers.branch_id ?> branches.id
+Ref: trainer_specializations.trainer_id > trainers.id
+Ref: trainer_schedules.trainer_id > trainers.id
+Ref: training_sessions.trainer_id > trainers.id
+Ref: training_sessions.member_id > members.id
+Ref: training_sessions.branch_id ?> branches.id
+Ref: reviews.member_id > members.id
+Ref: reviews.trainer_id > trainers.id
+
+// Payments
+Ref: payments.member_registration_id > member_registrations.id
+Ref: payments.membership_plan_id > membership_plans.id
+Ref: payments.coupon_id ?> coupons.id
+Ref: payments.approved_by ?> users.id
+Ref: discounts.coupon_id > coupons.id
+Ref: discounts.member_registration_id > member_registrations.id
+Ref: discounts.payment_id ?> payments.id
+Ref: expenses.branch_id ?> branches.id
+Ref: expenses.approved_by ?> users.id
+
+// Diet
+Ref: diet_meals.diet_plan_id > diet_plans.id
+Ref: member_diets.member_id > members.id
+Ref: member_diets.diet_plan_id > diet_plans.id
+Ref: diet_progress.member_diet_id > member_diets.id
+
+// Workouts
+Ref: member_workouts.member_id > members.id
+Ref: member_workouts.trainer_id ?> trainers.id
+Ref: workout_exercises.member_workout_id > member_workouts.id
+Ref: workout_exercises.exercise_id > exercises.id
+
+// Facilities
+Ref: equipment.branch_id ?> branches.id
+Ref: equipment_maintenance.equipment_id > equipment.id
+Ref: lockers.branch_id ?> branches.id
+Ref: member_lockers.member_id > members.id
+Ref: member_lockers.locker_id > lockers.id
+
+// ===================== DIAGRAM GROUPS (visual grouping) =====================
+
+TableGroup access_management [color: #2E6DA4] {
+  users
+  roles
+  permissions
+  permission_role
+  personal_access_tokens
+}
+
+TableGroup members_module [color: #27AE60] {
+  members
+  member_registrations
+  health_info
+  attendances
+}
+
+TableGroup membership_module [color: #8E44AD] {
+  membership_plans
+  subscriptions
+  lead_inquiries
+}
+
+TableGroup hr_module [color: #16A085] {
+  staff
+  leave_requests
+}
+
+TableGroup trainer_module [color: #C0392B] {
+  trainers
+  trainer_specializations
+  trainer_schedules
+  training_sessions
+  reviews
+}
+
+TableGroup payment_module [color: #D35400] {
+  payment_numbers
+  coupons
+  payments
+  discounts
+  expenses
+}
+
+TableGroup diet_module [color: #B7950B] {
+  diet_plans
+  diet_meals
+  member_diets
+  diet_progress
+}
+
+TableGroup workout_module [color: #2980B9] {
+  exercises
+  member_workouts
+  workout_exercises
+}
+
+TableGroup facility_module [color: #7F8C8D] {
+  equipment
+  equipment_maintenance
+  lockers
+  member_lockers
+}
